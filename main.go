@@ -7,6 +7,7 @@ import (
 
 	"github.com/crossplane/hiveworld/cmd/resource"
 	"github.com/crossplane/hiveworld/cmd/schema"
+	"github.com/crossplane/hiveworld/generated/api/google"
 	"github.com/crossplane/hiveworld/pkg/client"
 )
 
@@ -18,9 +19,15 @@ var (
 	dumpSchemaCmd = schemaCmd.Command("dump", "Print schema to stdout.")
 	jsonDumpFlag  = dumpSchemaCmd.Flag("json", "Output schema formatted as a json object.").Bool()
 
-	resourceCmd      = hiveworld.Command("resource", "subcommands operating on managed resources.")
-	resourceReadCmd  = resourceCmd.Command("read", "Read metadata for managed resource described by on-disk yaml.")
-	resourceReadPath = resourceReadCmd.Arg("yaml-path", "Path to resource yaml on disk.").String()
+	generateSchemaCmd        = schemaCmd.Command("generate", "Use Provider.GetSchema() to generate crossplane types.")
+	onlyGenerateResourceFlag = generateSchemaCmd.Flag("resource", "Limit generation to the single resource named by this flag.").String()
+
+	resourceCmd       = hiveworld.Command("resource", "subcommands operating on managed resources.")
+	resourcePath      = resourceCmd.Flag("yaml-path", "Path to resource yaml on disk.").String()
+	resourceReadCmd   = resourceCmd.Command("read", "Read metadata for managed resource described by on-disk yaml.")
+	resourceCreateCmd = resourceCmd.Command("create", "Create managed resource described by on-disk yaml.")
+	resourceUpdateCmd = resourceCmd.Command("update", "Update managed resource to state described by on-disk yaml.")
+	resourceDeleteCmd = resourceCmd.Command("delete", "Update managed resource identified by on-disk yaml resource.")
 )
 
 func main() {
@@ -36,6 +43,7 @@ func newProvider(path string) (*client.Provider, error) {
 }
 
 func run() error {
+	google.Register()
 	switch kingpin.MustParse(hiveworld.Parse(os.Args[1:])) {
 	case dumpSchemaCmd.FullCommand():
 		provider, err := newProvider(*configPath)
@@ -45,13 +53,50 @@ func run() error {
 		}
 		schema.Dump(provider, *jsonDumpFlag)
 		return nil
+	case generateSchemaCmd.FullCommand():
+		provider, err := newProvider(*configPath)
+		defer provider.GRPCProvider.Close()
+		if err != nil {
+			return err
+		}
+		err = schema.GenerateSchema(onlyGenerateResourceFlag, provider)
 	case resourceReadCmd.FullCommand():
 		provider, err := newProvider(*configPath)
 		defer provider.GRPCProvider.Close()
 		if err != nil {
 			return err
 		}
-		err = resource.ReadResource(*resourceReadPath, provider)
+		err = resource.ReadResource(*resourcePath, provider)
+		if err != nil {
+			return err
+		}
+	case resourceCreateCmd.FullCommand():
+		provider, err := newProvider(*configPath)
+		defer provider.GRPCProvider.Close()
+		if err != nil {
+			return err
+		}
+		err = resource.CreateResource(*resourcePath, provider)
+		if err != nil {
+			return err
+		}
+	case resourceUpdateCmd.FullCommand():
+		provider, err := newProvider(*configPath)
+		defer provider.GRPCProvider.Close()
+		if err != nil {
+			return err
+		}
+		err = resource.UpdateResource(*resourcePath, provider)
+		if err != nil {
+			return err
+		}
+	case resourceDeleteCmd.FullCommand():
+		provider, err := newProvider(*configPath)
+		defer provider.GRPCProvider.Close()
+		if err != nil {
+			return err
+		}
+		err = resource.DeleteResource(*resourcePath, provider)
 		if err != nil {
 			return err
 		}

@@ -22,7 +22,18 @@ func NewGRPCProvider(providerName, pluginDir string) (*tfplugin.GRPCProvider, er
 	pluginMeta := pluginMetaSet.Newest()
 
 	// plugin.NewClient returns a client that knows how to spawn a provider subprocess and set up the grpc connection
-	pluginClient := plugin.NewClient(tfplugin.ClientConfig(pluginMeta))
+	cfg := tfplugin.ClientConfig(pluginMeta)
+	// this discards the noisy debug logs that we get back from go-plugin
+	// note that if we want to add options to display these logs w/ verbosity config, setting Output: nil
+	// will use the default stdout writer and hclog Levels line up with the standard logging lib.
+	/*
+		cfg.Logger = hclog.New(&hclog.LoggerOptions{
+			Output: ioutil.Discard,
+			Level:  hclog.Trace,
+			Name:   "plugin",
+		})
+	*/
+	pluginClient := plugin.NewClient(cfg)
 	// 2. Spawn the chosen plugin binary as a subprocess, connect to its stdout and parse the grpc connection configuration
 	// the connection to the client is set up at this point in the negotiation process, but the protobuf client
 	// code hasn't been initialized

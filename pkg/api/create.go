@@ -5,13 +5,14 @@ import (
 	"github.com/crossplane/hiveworld/pkg/client"
 	"github.com/crossplane/hiveworld/pkg/registry"
 	"github.com/hashicorp/terraform/providers"
+	"github.com/zclconf/go-cty/cty"
 	k8schema "k8s.io/apimachinery/pkg/runtime/schema"
 )
 
-// Read returns an up-to-date version of the resource
+// Create returns an up-to-date version of the resource
 // TODO: If `id` is unset for a new resource, how do we figure out
 // what value needs to be used as the id?
-func Read(p *client.Provider, res resource.Managed, gvk k8schema.GroupVersionKind) (resource.Managed, error) {
+func Create(p *client.Provider, res resource.Managed, gvk k8schema.GroupVersionKind) (resource.Managed, error) {
 	// read resource yaml
 	// lookup terraform schema from type name
 	// TODO: registry of types from indexing provider getschema
@@ -35,17 +36,21 @@ func Read(p *client.Provider, res resource.Managed, gvk k8schema.GroupVersionKin
 	if err != nil {
 		return nil, err
 	}
-	req := providers.ReadResourceRequest{
+
+	// TODO: research how/if the major providers are using Config
+	// same goes for the private state blobs that are shuffled around
+	req := providers.ApplyResourceChangeRequest{
 		TypeName:   tfName,
-		PriorState: encoded,
-		Private:    nil,
+		PriorState: cty.NullVal(s.Block.ImpliedType()),
+		// TODO: For the purposes of Create, I am assuming that it's fine for
+		// Config and PlannedState to be the same
+		Config:       encoded,
+		PlannedState: encoded,
 	}
-	resp := p.GRPCProvider.ReadResource(req)
+	resp := p.GRPCProvider.ApplyResourceChange(req)
 	if resp.Diagnostics.HasErrors() {
 		return res, resp.Diagnostics.NonFatalErr()
 	}
-	// should we persist resp.Private in a blob in the resource to use on the next call?
-	// Risky since size is unbounded, but we might be matching core behavior more carefully
 	ctyDecoder, err := registry.GetCtyDecoder(gvk)
 	if err != nil {
 		return nil, err

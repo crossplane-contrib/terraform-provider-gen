@@ -1,9 +1,9 @@
 package client
 
 import (
-	"fmt"
 	"io/ioutil"
 
+	"github.com/hashicorp/terraform/configs/configschema"
 	tfplugin "github.com/hashicorp/terraform/plugin"
 	"github.com/hashicorp/terraform/providers"
 	"github.com/zclconf/go-cty/cty"
@@ -42,7 +42,7 @@ func (p *Provider) Configure() error {
 	if err != nil {
 		return err
 	}
-	ctyCfg := MergeConfig(schema, p.Config)
+	ctyCfg := PopulateConfig(schema, p.Config)
 
 	cfgReq := providers.ConfigureRequest{
 		TerraformVersion: FakeTerraformVersion,
@@ -106,43 +106,22 @@ type schemaAttribute struct {
 	Description string `json:"description"`
 }
 
-func GetProviderSchema(p *Provider) (ProviderSchema, error) {
+func GetProviderSchema(p *Provider) (*configschema.Block, error) {
 	resp := p.GRPCProvider.GetSchema()
-	ps := ProviderSchema{
-		Name:       p.Config.ProviderName,
-		Attributes: make(map[string]schemaAttribute),
-	}
 	if resp.Diagnostics.HasErrors() {
-		return ps, resp.Diagnostics.NonFatalErr()
+		return resp.Provider.Block, resp.Diagnostics.NonFatalErr()
 	}
-	cfgSchema := resp.Provider.Block
-	for key, attr := range cfgSchema.Attributes {
-		ps.Attributes[key] = schemaAttribute{
-			Type:        attr.Type.FriendlyName(),
-			Required:    attr.Required,
-			Optional:    attr.Optional,
-			Computed:    attr.Computed,
-			Description: attr.Description,
-		}
-	}
-	for _, block := range cfgSchema.BlockTypes {
-		for k2, v2 := range block.Attributes {
-			fmt.Printf("- sub key %s = %s", k2, v2.Type.FriendlyName())
-		}
-	}
-	return ps, nil
+	return resp.Provider.Block, nil
 }
 
-func MergeConfig(schema ProviderSchema, cfg ProviderConfig) cty.Value {
+func PopulateConfig(schema *configschema.Block, cfg ProviderConfig) cty.Value {
 	merged := make(map[string]cty.Value)
 	for key, attr := range schema.Attributes {
 		if val, ok := cfg.Config[key]; ok {
 			merged[key] = cty.StringVal(val)
 		} else {
-			var t cty.Type
-			switch attr.Type {
+			switch attr.Type.FriendlyName() {
 			case "string":
-				t = cty.String
 				merged[key] = cty.NullVal(cty.String)
 				continue
 			case "bool":
@@ -151,11 +130,17 @@ func MergeConfig(schema ProviderSchema, cfg ProviderConfig) cty.Value {
 			case "list of string":
 				merged[key] = cty.ListValEmpty(cty.String)
 			default:
-				t = cty.EmptyObject
-				merged[key] = cty.NullVal(t)
+				merged[key] = cty.NullVal(cty.EmptyObject)
 			}
 		}
 	}
+	/*
+		for _, block := range cfgSchema.BlockTypes {
+			for k2, v2 := range block.Attributes {
+				fmt.Printf("- sub key %s = %s", k2, v2.Type.FriendlyName())
+			}
+		}
+	*/
 	batching := make(map[string]cty.Value)
 	batching["enable_batching"] = cty.BoolVal(false)
 	batching["send_after"] = cty.StringVal("3s")

@@ -1,0 +1,8 @@
+provider_name: google
+version: 11.2.3
+plugin_dir: "/Users/kasey/src/crossplane/hiveworld/.terraform/plugins/darwin_amd64/"
+config:
+  access_token: "ya29.a0AfH6SMAJ8olw699QYxFjvWpOO1yybtmq5o36M-DAsgXBtd7hrGCkNJgw9Un70CiHY1zaI5ngpLn84F0qDB58Pupq5MDNWr8CVPjo2Qn9xOS47yRczL0TEZnteRsn5v36v_LgVOoBA2hVxbHSUmaQfWiCaX6686ON0kDGrEtMTcox"
+  project:  kasey-gcp-provider-test
+  region: us-central1
+  zone: c

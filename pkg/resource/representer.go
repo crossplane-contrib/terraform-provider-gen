@@ -1,17 +1,35 @@
 package resource
 
+/*
+
 import (
 	"io/ioutil"
 	"strings"
 
+	k8schema "k8s.io/apimachinery/pkg/runtime/schema"
+	//xpresource "github.com/crossplane/crossplane-runtime/pkg/resource"
 	"github.com/crossplane/hiveworld/pkg/client"
 	"gopkg.in/yaml.v2"
 )
 
+
+type ResourceObject struct {
+
+}
+
+type ResourceData interface {
+	Resource() ResourceObject
+	Data() []byte
+}
+
 // YAMLByteRepresenter is a transformer that represents a resource as a yaml-encoded []byte
-type YAMLByteRepresenter struct {
+type resourceData struct {
 	Raw []byte
 	gvk GVK
+}
+
+func Resource() ResourceObject {
+	return ResourceObject{}
 }
 
 // Representer describes a type that can create different representations of the same
@@ -77,3 +95,5 @@ func NewYAMLByteRepresenter(content []byte) (Representer, error) {
 func (y *YAMLByteRepresenter) AsYAML() ([]byte, error) {
 	return y.Raw, nil
 }
+
+*/
