@@ -24,7 +24,7 @@ import (
 
 // Package type metadata.
 const (
-	Group   = "iam.gcp.crossplane.io"
+	Group   = "iam.gcp.terraform-plugin.crossplane.io"
 	Version = "v1alpha1"
 )
 
@@ -42,7 +42,7 @@ var (
 	ServiceAccountGroupVersionKind = SchemeGroupVersion.WithKind(ServiceAccountKind)
 )
 
-func RegisteryEntry() *registry.Entry {
+func ServiceAccountRegistryEntry() *registry.Entry {
 	// SchemeBuilder is used to add go types to the GroupVersionKind scheme
 	schemeBuilder := &scheme.Builder{GroupVersion: SchemeGroupVersion}
 	schemeBuilder.Register(&ServiceAccount{}, &ServiceAccountList{})

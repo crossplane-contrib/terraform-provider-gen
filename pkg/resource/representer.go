@@ -48,14 +48,14 @@ type GVK struct {
 }
 
 // Group returns the "group" portion of the `APIVersion` field
-// eg returns "iam.gcp.crossplane.io" for APIVersion="iam.gcp.crossplane.io/v1alpha1"
+// eg returns "iam.gcp.terraform-plugin.crossplane.io" for APIVersion="iam.gcp.terraform-plugin.crossplane.io/v1alpha1"
 func (g GVK) Group() string {
 	parts := strings.Split(g.APIVersion, "/")
 	return parts[0]
 }
 
 // Version returns the "version" portion of the `APIVersion` field
-// eg returns "v1alpha1" for APIVersion="iam.gcp.crossplane.io/v1alpha1"
+// eg returns "v1alpha1" for APIVersion="iam.gcp.terraform-plugin.crossplane.io/v1alpha1"
 func (g GVK) Version() string {
 	parts := strings.Split(g.APIVersion, "/")
 	return parts[1]

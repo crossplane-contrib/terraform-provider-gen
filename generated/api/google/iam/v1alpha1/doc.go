@@ -17,6 +17,6 @@ limitations under the License.
 // Package v1alpha1 contains managed resources, such as
 // ServiceAccount, for IAM services.
 // +kubebuilder:object:generate=true
-// +groupName=iam.gcp.crossplane.io
+// +groupName=iam.gcp.terraform-plugin.crossplane.io
 // +versionName=v1alpha1
 package v1alpha1

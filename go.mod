@@ -2,6 +2,10 @@ module github.com/crossplane/hiveworld
 
 go 1.13
 
+replace (
+	github.com/crossplane/provider-terraform-plugin v0.1.0
+)
+
 require (
 	github.com/alecthomas/kingpin v2.2.6+incompatible // indirect
 	github.com/alecthomas/kong v0.2.9
