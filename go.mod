@@ -8,6 +8,7 @@ require (
 	cloud.google.com/go/logging v1.0.0
 	github.com/alecthomas/kong v0.2.9
 	github.com/crossplane/crossplane-runtime v0.9.0
+	github.com/crossplane/crossplane-tools v0.0.0-20200412230150-efd0edd4565b
 	github.com/crossplane/provider-terraform-plugin v0.0.0-00010101000000-000000000000
 	github.com/crossplanebook/provider-template v0.0.0-20200617152219-f62849cb7889
 	github.com/docker/docker v0.7.3-0.20190327010347-be7ac8be2ae0
@@ -28,5 +29,6 @@ require (
 	k8s.io/api v0.18.2
 	k8s.io/apimachinery v0.18.2
 	sigs.k8s.io/controller-runtime v0.6.0
+	sigs.k8s.io/controller-tools v0.2.4
 	sigs.k8s.io/yaml v1.2.0
 )
