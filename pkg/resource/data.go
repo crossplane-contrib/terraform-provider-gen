@@ -5,7 +5,7 @@ import (
 	"strings"
 
 	xpresource "github.com/crossplane/crossplane-runtime/pkg/resource"
-	"github.com/crossplane/hiveworld/pkg/registry"
+	"github.com/crossplane/provider-terraform-plugin/pkg/registry"
 	"gopkg.in/yaml.v2"
 	k8schema "k8s.io/apimachinery/pkg/runtime/schema"
 )
@@ -15,8 +15,8 @@ type ResourceData struct {
 	GVK  k8schema.GroupVersionKind
 }
 
-func (rd *ResourceData) ManagedResource() (xpresource.Managed, error) {
-	rep, err := registry.GetResourceUnmarshalFunc(rd.GVK)
+func (rd *ResourceData) ManagedResource(r *registry.Registry) (xpresource.Managed, error) {
+	rep, err := r.GetResourceUnmarshalFunc(rd.GVK)
 	if err != nil {
 		return nil, err
 	}

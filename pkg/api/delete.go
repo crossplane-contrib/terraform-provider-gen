@@ -3,7 +3,7 @@ package api
 import (
 	"github.com/crossplane/crossplane-runtime/pkg/resource"
 	"github.com/crossplane/hiveworld/pkg/client"
-	"github.com/crossplane/hiveworld/pkg/registry"
+	"github.com/crossplane/provider-terraform-plugin/pkg/registry"
 	"github.com/hashicorp/terraform/providers"
 	"github.com/zclconf/go-cty/cty"
 	k8schema "k8s.io/apimachinery/pkg/runtime/schema"
@@ -12,12 +12,12 @@ import (
 // Delete deletes the given resource from the provider
 // In terraform slang this is expressed as asking the provider
 // to act on a Nil planned state.
-func Delete(p *client.Provider, res resource.Managed, gvk k8schema.GroupVersionKind) error {
+func Delete(p *client.Provider, r *registry.Registry, res resource.Managed, gvk k8schema.GroupVersionKind) error {
 	s, err := SchemaForGVK(gvk, p)
 	if err != nil {
 		return err
 	}
-	ctyEncoder, err := registry.GetCtyEncoder(gvk)
+	ctyEncoder, err := r.GetCtyEncoder(gvk)
 	if err != nil {
 		return err
 	}
@@ -25,7 +25,7 @@ func Delete(p *client.Provider, res resource.Managed, gvk k8schema.GroupVersionK
 	if err != nil {
 		return err
 	}
-	tfName, err := registry.GetTerraformNameForGVK(gvk)
+	tfName, err := r.GetTerraformNameForGVK(gvk)
 	if err != nil {
 		return err
 	}

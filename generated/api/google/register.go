@@ -1,15 +1,19 @@
 package google
 
 import (
-	"github.com/crossplane/hiveworld/pkg/registry"
+	"github.com/crossplane/provider-terraform-plugin/pkg/registry"
 )
 
-func Register() {
+func Register(r *registry.Registry) {
 	for _, entry := range RegistryEntries {
-		registry.RegisterCtyEncodeFunc(entry.GVK, entry.EncodeCtyCallback)
-		registry.RegisterCtyDecodeFunc(entry.GVK, entry.DecodeCtyCallback)
-		registry.RegisterResourceUnmarshalFunc(entry.GVK, entry.UnmarshalResourceCallback)
-		registry.RegisterTerraformNameMapping(entry.TerraformResourceName, entry.GVK)
-		registry.RegisterYAMLEncodeFunc(entry.GVK, entry.YamlEncodeCallback)
+		/*
+			r.RegisterCtyEncodeFunc(entry.GVK, entry.EncodeCtyCallback)
+			r.RegisterCtyDecodeFunc(entry.GVK, entry.DecodeCtyCallback)
+			r.RegisterResourceUnmarshalFunc(entry.GVK, entry.UnmarshalResourceCallback)
+			r.RegisterTerraformNameMapping(entry.TerraformResourceName, entry.GVK)
+			r.RegisterYAMLEncodeFunc(entry.GVK, entry.YamlEncodeCallback)
+			r.RegisterReconcilerConfigureFunc(entry.GVK, entry.ReconcilerConfigurer)
+		*/
+		r.Register(entry)
 	}
 }

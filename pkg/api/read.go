@@ -3,7 +3,7 @@ package api
 import (
 	"github.com/crossplane/crossplane-runtime/pkg/resource"
 	"github.com/crossplane/hiveworld/pkg/client"
-	"github.com/crossplane/hiveworld/pkg/registry"
+	"github.com/crossplane/provider-terraform-plugin/pkg/registry"
 	"github.com/hashicorp/terraform/providers"
 	k8schema "k8s.io/apimachinery/pkg/runtime/schema"
 )
@@ -11,7 +11,7 @@ import (
 // Read returns an up-to-date version of the resource
 // TODO: If `id` is unset for a new resource, how do we figure out
 // what value needs to be used as the id?
-func Read(p *client.Provider, res resource.Managed, gvk k8schema.GroupVersionKind) (resource.Managed, error) {
+func Read(p *client.Provider, r *registry.Registry, res resource.Managed, gvk k8schema.GroupVersionKind) (resource.Managed, error) {
 	// read resource yaml
 	// lookup terraform schema from type name
 	// TODO: registry of types from indexing provider getschema
@@ -23,7 +23,7 @@ func Read(p *client.Provider, res resource.Managed, gvk k8schema.GroupVersionKin
 	if err != nil {
 		return nil, err
 	}
-	ctyEncoder, err := registry.GetCtyEncoder(gvk)
+	ctyEncoder, err := r.GetCtyEncoder(gvk)
 	if err != nil {
 		return nil, err
 	}
@@ -31,7 +31,7 @@ func Read(p *client.Provider, res resource.Managed, gvk k8schema.GroupVersionKin
 	if err != nil {
 		return nil, err
 	}
-	tfName, err := registry.GetTerraformNameForGVK(gvk)
+	tfName, err := r.GetTerraformNameForGVK(gvk)
 	if err != nil {
 		return nil, err
 	}
@@ -46,7 +46,7 @@ func Read(p *client.Provider, res resource.Managed, gvk k8schema.GroupVersionKin
 	}
 	// should we persist resp.Private in a blob in the resource to use on the next call?
 	// Risky since size is unbounded, but we might be matching core behavior more carefully
-	ctyDecoder, err := registry.GetCtyDecoder(gvk)
+	ctyDecoder, err := r.GetCtyDecoder(gvk)
 	if err != nil {
 		return nil, err
 	}

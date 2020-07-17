@@ -5,26 +5,26 @@ import (
 
 	"github.com/crossplane/hiveworld/pkg/api"
 	"github.com/crossplane/hiveworld/pkg/client"
-	"github.com/crossplane/hiveworld/pkg/registry"
 	"github.com/crossplane/hiveworld/pkg/resource"
+	"github.com/crossplane/provider-terraform-plugin/pkg/registry"
 )
 
 // ReadResource will read a resource description
-func CreateResource(resourceReadPath string, provider *client.Provider) error {
+func CreateResource(resourceReadPath string, provider *client.Provider, r *registry.Registry) error {
 	rd, err := resource.ResourceDataFromFile(resourceReadPath)
 	if err != nil {
 		return err
 	}
-	res, err := rd.ManagedResource()
+	res, err := rd.ManagedResource(r)
 	if err != nil {
 		return err
 	}
 	gvk := rd.GVK
-	newRes, err := api.Create(provider, res, gvk)
+	newRes, err := api.Create(provider, r, res, gvk)
 	if err != nil {
 		return err
 	}
-	asYAML, err := registry.GetYAMLEncodeFunc(gvk)
+	asYAML, err := r.GetYAMLEncodeFunc(gvk)
 	if err != nil {
 		return err
 	}

@@ -3,18 +3,18 @@ package api
 import (
 	"github.com/crossplane/crossplane-runtime/pkg/resource"
 	"github.com/crossplane/hiveworld/pkg/client"
-	"github.com/crossplane/hiveworld/pkg/registry"
+	"github.com/crossplane/provider-terraform-plugin/pkg/registry"
 	"github.com/hashicorp/terraform/providers"
 	k8schema "k8s.io/apimachinery/pkg/runtime/schema"
 )
 
 // Update syncs with an existing resource and modifies mutable values
-func Update(p *client.Provider, res resource.Managed, gvk k8schema.GroupVersionKind) (resource.Managed, error) {
+func Update(p *client.Provider, r *registry.Registry, res resource.Managed, gvk k8schema.GroupVersionKind) (resource.Managed, error) {
 	s, err := SchemaForGVK(gvk, p)
 	if err != nil {
 		return nil, err
 	}
-	ctyEncoder, err := registry.GetCtyEncoder(gvk)
+	ctyEncoder, err := r.GetCtyEncoder(gvk)
 	if err != nil {
 		return nil, err
 	}
@@ -22,12 +22,12 @@ func Update(p *client.Provider, res resource.Managed, gvk k8schema.GroupVersionK
 	if err != nil {
 		return nil, err
 	}
-	tfName, err := registry.GetTerraformNameForGVK(gvk)
+	tfName, err := r.GetTerraformNameForGVK(gvk)
 	if err != nil {
 		return nil, err
 	}
 
-	prior, err := Read(p, res, gvk)
+	prior, err := Read(p, r, res, gvk)
 	if err != nil {
 		return nil, err
 	}
@@ -50,7 +50,7 @@ func Update(p *client.Provider, res resource.Managed, gvk k8schema.GroupVersionK
 	if resp.Diagnostics.HasErrors() {
 		return res, resp.Diagnostics.NonFatalErr()
 	}
-	ctyDecoder, err := registry.GetCtyDecoder(gvk)
+	ctyDecoder, err := r.GetCtyDecoder(gvk)
 	if err != nil {
 		return nil, err
 	}

@@ -9,6 +9,7 @@ import (
 	"github.com/crossplane/hiveworld/cmd/schema"
 	"github.com/crossplane/hiveworld/generated/api/google"
 	"github.com/crossplane/hiveworld/pkg/client"
+	"github.com/crossplane/provider-terraform-plugin/pkg/registry"
 )
 
 var (
@@ -43,7 +44,8 @@ func newProvider(path string) (*client.Provider, error) {
 }
 
 func run() error {
-	google.Register()
+	r := registry.NewRegistry()
+	google.Register(r)
 	switch kingpin.MustParse(hiveworld.Parse(os.Args[1:])) {
 	case dumpSchemaCmd.FullCommand():
 		provider, err := newProvider(*configPath)
@@ -66,7 +68,7 @@ func run() error {
 		if err != nil {
 			return err
 		}
-		err = resource.ReadResource(*resourcePath, provider)
+		err = resource.ReadResource(*resourcePath, provider, r)
 		if err != nil {
 			return err
 		}
@@ -76,7 +78,7 @@ func run() error {
 		if err != nil {
 			return err
 		}
-		err = resource.CreateResource(*resourcePath, provider)
+		err = resource.CreateResource(*resourcePath, provider, r)
 		if err != nil {
 			return err
 		}
@@ -86,7 +88,7 @@ func run() error {
 		if err != nil {
 			return err
 		}
-		err = resource.UpdateResource(*resourcePath, provider)
+		err = resource.UpdateResource(*resourcePath, provider, r)
 		if err != nil {
 			return err
 		}
@@ -96,7 +98,7 @@ func run() error {
 		if err != nil {
 			return err
 		}
-		err = resource.DeleteResource(*resourcePath, provider)
+		err = resource.DeleteResource(*resourcePath, provider, r)
 		if err != nil {
 			return err
 		}

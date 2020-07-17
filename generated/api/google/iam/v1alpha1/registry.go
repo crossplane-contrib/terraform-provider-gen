@@ -17,7 +17,9 @@ limitations under the License.
 package v1alpha1
 
 import (
-	"github.com/crossplane/hiveworld/pkg/registry"
+	"reflect"
+
+	"github.com/crossplane/provider-terraform-plugin/pkg/registry"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"sigs.k8s.io/controller-runtime/pkg/scheme"
 )
@@ -35,11 +37,11 @@ var (
 
 // ServiceAccount type metadata.
 var (
-	//ServiceAccountKind             = reflect.TypeOf(ServiceAccount{}).Name()
-	ServiceAccountKind             = "google_service_account"
-	ServiceAccountGroupKind        = schema.GroupKind{Group: Group, Kind: ServiceAccountKind}.String()
-	ServiceAccountKindAPIVersion   = ServiceAccountKind + "." + SchemeGroupVersion.String()
-	ServiceAccountGroupVersionKind = SchemeGroupVersion.WithKind(ServiceAccountKind)
+	ServiceAccountKind                  = reflect.TypeOf(ServiceAccount{}).Name()
+	ServiceAccountGroupKind             = schema.GroupKind{Group: Group, Kind: ServiceAccountKind}.String()
+	ServiceAccountKindAPIVersion        = ServiceAccountKind + "." + SchemeGroupVersion.String()
+	ServiceAccountGroupVersionKind      = SchemeGroupVersion.WithKind(ServiceAccountKind)
+	ServiceAccountTerraformResourceName = "google_service_account"
 )
 
 func ServiceAccountRegistryEntry() *registry.Entry {
@@ -50,9 +52,10 @@ func ServiceAccountRegistryEntry() *registry.Entry {
 		GVK:                       ServiceAccountGroupVersionKind,
 		SchemeBuilder:             schemeBuilder,
 		UnmarshalResourceCallback: UnmarshalServiceAccount,
-		TerraformResourceName:     ServiceAccountKind,
+		TerraformResourceName:     ServiceAccountTerraformResourceName,
 		EncodeCtyCallback:         AsCtyValue,
 		DecodeCtyCallback:         FromCtyValue,
 		YamlEncodeCallback:        AsYAML,
+		ReconcilerConfigurer:      ConfigureReconciler,
 	}
 }
