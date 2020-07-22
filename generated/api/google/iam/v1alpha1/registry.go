@@ -57,5 +57,6 @@ func ServiceAccountRegistryEntry() *registry.Entry {
 		DecodeCtyCallback:         FromCtyValue,
 		YamlEncodeCallback:        AsYAML,
 		ReconcilerConfigurer:      ConfigureReconciler,
+		ResourceDiffIniter:        diffIniter,
 	}
 }

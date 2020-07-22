@@ -113,7 +113,7 @@ type ServiceAccountTerraformConfigTimeout struct {
 	Create *string `json:"create,omitempty"`
 }
 
-// TODO: disucss the fact that this had to be
+// TODO: discuss the fact that this had to be
 // defined as a separate struct in order for code generation
 // to not throw a segfault
 /*
