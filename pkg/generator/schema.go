@@ -3,8 +3,7 @@ package generator
 import (
 	"fmt"
 
-	"github.com/crossplane/hiveworld/pkg/api"
-	"github.com/crossplane/hiveworld/pkg/client"
+	"github.com/crossplane/provider-terraform-plugin/pkg/client"
 	"github.com/hashicorp/terraform/configs/configschema"
 	"github.com/hashicorp/terraform/providers"
 )
@@ -29,10 +28,12 @@ func WithResourceName(name *string) GenerateSchemaOption {
 }
 
 func (gen *SchemaGenerator) Generate() error {
-	schema, err := api.GetSchema(gen.provider)
-	if err != nil {
-		return err
+	resp := gen.provider.GRPCProvider.GetSchema()
+	if resp.Diagnostics.HasErrors() {
+		return resp.Diagnostics.NonFatalErr()
 	}
+	schema := resp.ResourceTypes
+
 	for resourceName, r := range schema {
 		if gen.cfg.resourceName != nil {
 			if *gen.cfg.resourceName != resourceName {

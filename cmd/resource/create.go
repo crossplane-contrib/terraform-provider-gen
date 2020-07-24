@@ -3,9 +3,9 @@ package resource
 import (
 	"fmt"
 
-	"github.com/crossplane/hiveworld/pkg/api"
-	"github.com/crossplane/hiveworld/pkg/client"
 	"github.com/crossplane/hiveworld/pkg/resource"
+	"github.com/crossplane/provider-terraform-plugin/pkg/api"
+	"github.com/crossplane/provider-terraform-plugin/pkg/client"
 	"github.com/crossplane/provider-terraform-plugin/pkg/registry"
 )
 
@@ -20,7 +20,7 @@ func CreateResource(resourceReadPath string, provider *client.Provider, r *regis
 		return err
 	}
 	gvk := rd.GVK
-	newRes, err := api.Create(provider, r, res, gvk)
+	newRes, err := api.Create(provider, r, res)
 	if err != nil {
 		return err
 	}

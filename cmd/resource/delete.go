@@ -3,9 +3,9 @@ package resource
 import (
 	"fmt"
 
-	"github.com/crossplane/hiveworld/pkg/api"
-	"github.com/crossplane/hiveworld/pkg/client"
 	"github.com/crossplane/hiveworld/pkg/resource"
+	"github.com/crossplane/provider-terraform-plugin/pkg/api"
+	"github.com/crossplane/provider-terraform-plugin/pkg/client"
 	"github.com/crossplane/provider-terraform-plugin/pkg/registry"
 )
 
@@ -19,8 +19,7 @@ func DeleteResource(resourceReadPath string, provider *client.Provider, r *regis
 	if err != nil {
 		return err
 	}
-	gvk := rd.GVK
-	err = api.Delete(provider, r, res, gvk)
+	err = api.Delete(provider, r, res)
 	if err != nil {
 		return err
 	}

@@ -132,8 +132,6 @@ github.com/crossplane/crossplane-tools v0.0.0-20200219001116-bb8b2ce46330/go.mod
 github.com/crossplane/crossplane-tools v0.0.0-20200412230150-efd0edd4565b h1:BqGODFDKcq4hd8RZeWmh8BsjfHS0eAtGWMLtT74rsG8=
 github.com/crossplane/crossplane-tools v0.0.0-20200412230150-efd0edd4565b/go.mod h1:C735A9X0x0lR8iGVOOxb49Mt70Ua4EM2b7PGaRPBLd4=
 github.com/crossplane/oam-kubernetes-runtime v0.0.0-20200426101222-2b61763c2e51/go.mod h1:tY+QSJ5ebP9jKh3CW4UsyeqQflnXEtEkiLYjxqVBJtI=
-github.com/crossplanebook/provider-template v0.0.0-20200617152219-f62849cb7889 h1:z4Nh8oHWkuQtadtnYBOThicefcki7bWrO7RjqFvmya4=
-github.com/crossplanebook/provider-template v0.0.0-20200617152219-f62849cb7889/go.mod h1:/ObkNy6W69Y+VFM3bsRCtMxWVhuRSbqSbJR1NMCEfys=
 github.com/dave/jennifer v1.3.0 h1:p3tl41zjjCZTNBytMwrUuiAnherNUZktlhPTKoF/sEk=
 github.com/dave/jennifer v1.3.0/go.mod h1:fIb+770HOpJ2fmN9EPPKOqm1vMGhB+TwXKMZhrIygKg=
 github.com/davecgh/go-spew v0.0.0-20151105211317-5215b55f46b2/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
@@ -358,6 +356,8 @@ github.com/hashicorp/terraform v0.12.26 h1:FVsTCH1DMvTlzVSO2sKCzkwLczf/eZBO4GuY5
 github.com/hashicorp/terraform v0.12.26/go.mod h1:CBxNAiTW0pLap44/3GU4j7cYE2bMhkKZNlHPcr4P55U=
 github.com/hashicorp/terraform v0.12.28 h1:mBA+A9dvMXk1xDpflKEP5mL/KOD0sXap+M4F4Vlgnvc=
 github.com/hashicorp/terraform v0.12.28/go.mod h1:CBxNAiTW0pLap44/3GU4j7cYE2bMhkKZNlHPcr4P55U=
+github.com/hashicorp/terraform v0.12.29 h1:UkuApT6qh6KONIT1Jz7HoV8f4B+x71db3bmGcBzjBB0=
+github.com/hashicorp/terraform v0.12.29/go.mod h1:CBxNAiTW0pLap44/3GU4j7cYE2bMhkKZNlHPcr4P55U=
 github.com/hashicorp/terraform-config-inspect v0.0.0-20191212124732-c6ae6269b9d7/go.mod h1:p+ivJws3dpqbp1iP84+npOyAmTTOLMgCzrXd3GSdn/A=
 github.com/hashicorp/terraform-svchost v0.0.0-20191011084731-65d371908596 h1:hjyO2JsNZUKT1ym+FAdlBEkGPevazYsmVgIMw7dVELg=
 github.com/hashicorp/terraform-svchost v0.0.0-20191011084731-65d371908596/go.mod h1:kNDNcF7sN4DocDLBkQYz73HGKwN1ANB1blq4lIYLYvg=

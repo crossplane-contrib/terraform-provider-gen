@@ -1,0 +1,13 @@
+---
+apiVersion: gcp.terraform-plugin.crossplane.io/v1alpha1
+kind: Provider
+metadata:
+  name: gcp-provider
+spec:
+  project:  kasey-gcp-provider-test
+  region: us-central1
+  zone: c
+  credentialsSecretRef:
+    namespace: crossplane-system
+    name: gcp-creds
+    key: key

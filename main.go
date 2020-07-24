@@ -8,7 +8,7 @@ import (
 	"github.com/crossplane/hiveworld/cmd/resource"
 	"github.com/crossplane/hiveworld/cmd/schema"
 	"github.com/crossplane/hiveworld/generated/api/google"
-	"github.com/crossplane/hiveworld/pkg/client"
+	"github.com/crossplane/provider-terraform-plugin/pkg/client"
 	"github.com/crossplane/provider-terraform-plugin/pkg/registry"
 )
 
