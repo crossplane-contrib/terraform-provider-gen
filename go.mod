@@ -2,14 +2,14 @@ module github.com/crossplane/hiveworld
 
 go 1.13
 
-replace github.com/crossplane/provider-terraform-plugin => /Users/kasey/src/crossplane/provider-terraform-plugin
+replace github.com/crossplane/terraform-provider-runtime => /Users/kasey/src/crossplane/terraform-provider-runtime
 
 require (
 	cloud.google.com/go/logging v1.0.0
 	github.com/alecthomas/kong v0.2.9
 	github.com/crossplane/crossplane-runtime v0.9.0
 	github.com/crossplane/crossplane-tools v0.0.0-20200412230150-efd0edd4565b
-	github.com/crossplane/provider-terraform-plugin v0.0.0-00010101000000-000000000000
+	github.com/crossplane/terraform-provider-runtime v0.0.0-00010101000000-000000000000
 	github.com/docker/docker v0.7.3-0.20190327010347-be7ac8be2ae0
 	github.com/docker/go-connections v0.4.0 // indirect
 	github.com/docker/go-metrics v0.0.1 // indirect

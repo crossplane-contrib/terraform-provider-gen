@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/crossplane/provider-terraform-plugin/pkg/client"
+	"github.com/crossplane/terraform-provider-runtime/pkg/client"
 )
 
 // Dump prints out the schema returned by the provider named by the provider arg

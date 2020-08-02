@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	xpresource "github.com/crossplane/crossplane-runtime/pkg/resource"
-	"github.com/crossplane/provider-terraform-plugin/pkg/registry"
+	"github.com/crossplane/terraform-provider-runtime/pkg/registry"
 )
 
 func forProviderDiffs(kube xpresource.Managed, prov xpresource.Managed) []string {

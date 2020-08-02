@@ -5,7 +5,7 @@ import (
 	"strings"
 
 	xpresource "github.com/crossplane/crossplane-runtime/pkg/resource"
-	"github.com/crossplane/provider-terraform-plugin/pkg/registry"
+	"github.com/crossplane/terraform-provider-runtime/pkg/registry"
 	"gopkg.in/yaml.v2"
 	k8schema "k8s.io/apimachinery/pkg/runtime/schema"
 )

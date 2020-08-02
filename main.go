@@ -8,8 +8,8 @@ import (
 	"github.com/crossplane/hiveworld/cmd/resource"
 	"github.com/crossplane/hiveworld/cmd/schema"
 	"github.com/crossplane/hiveworld/generated/api/google"
-	"github.com/crossplane/provider-terraform-plugin/pkg/client"
-	"github.com/crossplane/provider-terraform-plugin/pkg/registry"
+	"github.com/crossplane/terraform-provider-runtime/pkg/client"
+	"github.com/crossplane/terraform-provider-runtime/pkg/registry"
 )
 
 var (

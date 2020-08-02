@@ -3,7 +3,7 @@ package generator
 import (
 	"fmt"
 
-	"github.com/crossplane/provider-terraform-plugin/pkg/client"
+	"github.com/crossplane/terraform-provider-runtime/pkg/client"
 	"github.com/hashicorp/terraform/configs/configschema"
 	"github.com/hashicorp/terraform/providers"
 )

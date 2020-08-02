@@ -4,9 +4,9 @@ import (
 	"fmt"
 
 	"github.com/crossplane/hiveworld/pkg/resource"
-	"github.com/crossplane/provider-terraform-plugin/pkg/api"
-	"github.com/crossplane/provider-terraform-plugin/pkg/client"
-	"github.com/crossplane/provider-terraform-plugin/pkg/registry"
+	"github.com/crossplane/terraform-provider-runtime/pkg/api"
+	"github.com/crossplane/terraform-provider-runtime/pkg/client"
+	"github.com/crossplane/terraform-provider-runtime/pkg/registry"
 )
 
 // UpdateResource will read a resource description from disk and sync with the provider

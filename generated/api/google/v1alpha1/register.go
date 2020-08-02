@@ -22,8 +22,8 @@ import (
 
 	"github.com/crossplane/crossplane-runtime/pkg/meta"
 	"github.com/crossplane/crossplane-runtime/pkg/resource"
-	"github.com/crossplane/provider-terraform-plugin/pkg/client"
-	"github.com/crossplane/provider-terraform-plugin/pkg/registry"
+	"github.com/crossplane/terraform-provider-runtime/pkg/client"
+	"github.com/crossplane/terraform-provider-runtime/pkg/registry"
 	"github.com/pkg/errors"
 	"github.com/zclconf/go-cty/cty"
 	v1 "k8s.io/api/core/v1"

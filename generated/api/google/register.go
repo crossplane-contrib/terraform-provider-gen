@@ -1,7 +1,7 @@
 package google
 
 import (
-	"github.com/crossplane/provider-terraform-plugin/pkg/registry"
+	"github.com/crossplane/terraform-provider-runtime/pkg/registry"
 )
 
 const ProviderReferenceName string = "google"
