@@ -25,7 +25,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
 	"github.com/crossplane/crossplane-runtime/pkg/logging"
-	"github.com/crossplane/hiveworld/generated/api/google"
+	"github.com/crossplane/terraform-provider-gen/generated/api/google"
 	"github.com/crossplane/terraform-provider-runtime/pkg/registry"
 
 	"github.com/crossplane/terraform-provider-runtime/pkg/controller"

@@ -1,8 +1,8 @@
 package google
 
 import (
-	iam "github.com/crossplane/hiveworld/generated/api/google/iam/v1alpha1"
-	gcp "github.com/crossplane/hiveworld/generated/api/google/v1alpha1"
+	iam "github.com/crossplane/terraform-provider-gen/generated/api/google/iam/v1alpha1"
+	gcp "github.com/crossplane/terraform-provider-gen/generated/api/google/v1alpha1"
 	"github.com/crossplane/terraform-provider-runtime/pkg/registry"
 )
 

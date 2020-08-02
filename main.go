@@ -5,9 +5,9 @@ import (
 
 	"gopkg.in/alecthomas/kingpin.v2"
 
-	"github.com/crossplane/hiveworld/cmd/resource"
-	"github.com/crossplane/hiveworld/cmd/schema"
-	"github.com/crossplane/hiveworld/generated/api/google"
+	"github.com/crossplane/terraform-provider-gen/cmd/resource"
+	"github.com/crossplane/terraform-provider-gen/cmd/schema"
+	"github.com/crossplane/terraform-provider-gen/generated/api/google"
 	"github.com/crossplane/terraform-provider-runtime/pkg/client"
 	"github.com/crossplane/terraform-provider-runtime/pkg/registry"
 )

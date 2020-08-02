@@ -1,4 +1,4 @@
-module github.com/crossplane/hiveworld
+module github.com/crossplane/terraform-provider-gen
 
 go 1.13
 

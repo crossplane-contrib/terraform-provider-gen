@@ -3,7 +3,7 @@ package resource
 import (
 	"fmt"
 
-	"github.com/crossplane/hiveworld/pkg/resource"
+	"github.com/crossplane/terraform-provider-gen/pkg/resource"
 	"github.com/crossplane/terraform-provider-runtime/pkg/api"
 	"github.com/crossplane/terraform-provider-runtime/pkg/client"
 	"github.com/crossplane/terraform-provider-runtime/pkg/registry"
