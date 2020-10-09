@@ -1,7 +1,7 @@
 package generator
 
 import (
-	"fmt"
+	"strings"
 
 	"github.com/pkg/errors"
 )
@@ -36,20 +36,27 @@ const (
 	AttributeTypeBool
 )
 
+var InvalidMRNameEmpty error = errors.New(".Name is required")
+var InvalidMRPackagePathEmpty error = errors.New(".PackagePath is required")
+
+type StructTagJson struct {
+	Name      string
+	Omitempty bool
+	Inline    bool
+}
+
 type StructTag struct {
-	JsonName      string
-	JsonOmitempty bool
-	Inline        bool
+	Json *StructTagJson
 }
 
 type Field struct {
 	Name           string
 	Type           FieldType
-	Fields         map[string]Field
+	Fields         []Field
 	StructField    StructField
 	AttributeField AttributeField
 	IsSlice        bool
-	Tag            StructTag
+	Tag            *StructTag
 
 	// struct comment "annotations"
 	Computed  bool
@@ -60,6 +67,7 @@ type Field struct {
 
 type StructField struct {
 	PackagePath string
+	PackageName string
 }
 
 type AttributeField struct {
@@ -67,14 +75,13 @@ type AttributeField struct {
 }
 
 type ManagedResource struct {
-	Name        string
-	PackagePath string
-	Spec        ResourceSpec
-	Status      ResourceStatus
+	Name         string
+	PackagePath  string
+	Parameters   Field
+	Observation  Field
+	namer        ResourceNamer
+	CategoryTags []string
 }
-
-var InvalidMRNameEmpty error = errors.New(".Name is required")
-var InvalidMRPackagePathEmpty error = errors.New(".PackagePath is required")
 
 // Validate ensures that the ManagedResource can be rendered to code
 func (mr *ManagedResource) Validate() error {
@@ -92,18 +99,25 @@ func (mr *ManagedResource) Validate() error {
 	return nil
 }
 
-type ResourceSpec struct {
-	ForProvider Field
+// CategoryTagsCSV returns a comma separated list respresenting CategoryTags
+// this is used in the kubebuilder resource categories comment annotation
+// eg: +kubebuilder:resource:categories={crossplane,managed,aws}
+func (mr *ManagedResource) CategoryCSV() string {
+	return strings.Join(mr.CategoryTags, ",")
 }
 
-func (rs *ResourceSpec) TypeName(resourceName string) string {
-	return fmt.Sprintf("%sSpec", resourceName)
+func (mr *ManagedResource) Namer() ResourceNamer {
+	return mr.namer
 }
 
-type ResourceStatus struct {
-	AtProvider Field
+func (mr *ManagedResource) WithNamer(n ResourceNamer) *ManagedResource {
+	mr.namer = n
+	return mr
 }
 
-func (rs *ResourceStatus) TypeName(resourceName string) string {
-	return fmt.Sprintf("%sStatus", resourceName)
+func NewManagedResource(name, packageName string) *ManagedResource {
+	return &ManagedResource{
+		Name:        name,
+		PackagePath: packageName,
+	}
 }

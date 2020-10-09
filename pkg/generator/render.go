@@ -1,27 +1,227 @@
 package generator
 
 import (
+	"fmt"
+
 	j "github.com/dave/jennifer/jen"
 )
+
+const CommentBlankLine = "" // assumes comments are joined with newlines
+const KubebuilderObjectRoot = " +kubebuilder:object:root=true"
+const KubebuilderMarkStatusSubresource = " +kubebuilder:subresource:status"
 
 // RenderManagedResource renders the top-level managed resource object
 // including all subtypes.
 // TODO: since we need to break out nested structs into their own named structs,
 // this method should return a map[string]string where each key is the name of the struct
-func RenderManagedResourceStructs(mr *ManagedResource) (string, error) {
+func RenderManagedResourceTypes(mr *ManagedResource) (map[string]string, error) {
+	namer := mr.Namer()
+	rendered := make(map[string]string)
 	if err := mr.Validate(); err != nil {
-		return "", err
+		return nil, err
 	}
-	mrStruct := j.Type().Id(mr.Name).Struct(
+	rendered[namer.TypeName()] = ResourceTypeFragment(mr).Render()
+	rendered[namer.TypeListName()] = TypeListFragment(mr).Render()
+	//rendered[namer.SpecTypeName()] = SpecFragment(mr).Render()
+	for name, frag := range SpecFragments(mr) {
+		rendered[name] = frag.Render()
+	}
+	for name, frag := range StatusFragments(mr) {
+		rendered[name] = frag.Render()
+	}
+	return rendered, nil
+}
+
+// RenderKubebuilderResourceAnnotation renderes the kubebuilder resource tag
+// which indicates whether the resources is namespace- or cluster-scoped
+// and sets the categories field in the CRD which allow kubectl to select
+// sets of resources based on matching category tags.
+func RenderKubebuilderResourceAnnotation(mr *ManagedResource) string {
+	catCSV := mr.CategoryCSV()
+	if catCSV == "" {
+		return " +kubebuilder:resource:scope=Cluster"
+	}
+	return fmt.Sprintf(" +kubebuilder:resource:scope=Cluster,categories={%s}", catCSV)
+}
+
+func ResourceTypeFragment(mr *ManagedResource) *Fragment {
+	namer := mr.Namer()
+	mrStruct := j.Type().Id(namer.TypeName()).Struct(
 		j.Qual("metav1", "TypeMeta").Tag(map[string]string{"json": ",inline"}),
 		j.Qual("metav1", "ObjectMeta").Tag(map[string]string{"json": "metadata,omitempty"}),
 		j.Line(),
-		j.Id("Spec").Qual("", mr.Spec.TypeName(mr.Name)).Tag(map[string]string{"json": "spec"}),
-		j.Id("Status").Qual("", mr.Status.TypeName(mr.Name)).Tag(map[string]string{"json": "status,omitempty"}),
+		j.Id("Spec").Qual("", namer.SpecTypeName()).Tag(map[string]string{"json": "spec"}),
+		j.Id("Status").Qual("", namer.StatusTypeName()).Tag(map[string]string{"json": "status,omitempty"}),
 	)
-	return RenderStatement(mrStruct), nil
+
+	comments := []string{
+		KubebuilderObjectRoot,
+		CommentBlankLine,
+		// TODO: check if there is a reasonable description field we can use for this comment
+		fmt.Sprintf("%s is a managed resource representing a resource mirrored in the cloud", namer.TypeName()),
+		// TODO: handle printcolumn lines
+		// we always mark ou resources
+		KubebuilderMarkStatusSubresource,
+		RenderKubebuilderResourceAnnotation(mr),
+	}
+
+	return &Fragment{
+		comments:  comments,
+		statement: mrStruct,
+	}
 }
 
-func RenderStatement(s *j.Statement) string {
-	return s.GoString()
+func TypeListFragment(mr *ManagedResource) *Fragment {
+	namer := mr.Namer()
+	stmt := j.Type().Id(namer.TypeListName()).Struct(
+		j.Qual("metav1", "TypeMeta").Tag(map[string]string{"json": ",inline"}),
+		j.Qual("metav1", "ListMeta").Tag(map[string]string{"json": "metadata,omitempty"}),
+		j.Id("Items").Index().Qual("", namer.TypeName()).Tag(map[string]string{"json": "items"}),
+	)
+	comments := []string{
+		KubebuilderObjectRoot,
+		CommentBlankLine,
+		fmt.Sprintf("%s contains a list of %s", namer.TypeName(), namer.TypeListName()),
+	}
+	return &Fragment{
+		statement: stmt,
+		comments:  comments,
+	}
+}
+
+func SpecFragments(mr *ManagedResource) map[string]*Fragment {
+	namer := mr.Namer()
+	frags := make(map[string]*Fragment)
+	stmt := j.Type().Id(namer.SpecTypeName()).Struct(
+		j.Qual("runtimev1alpha1", "ResourceSpec").Tag(map[string]string{"json": ",inline"}),
+		j.Id("ForProvider").Qual("", namer.ForProviderTypeName()).Tag(map[string]string{"json": ",inline"}),
+	)
+	comment := fmt.Sprintf("A %s defines the desired state of a %s", namer.SpecTypeName(), namer.TypeName())
+	frags[namer.SpecTypeName()] = &Fragment{
+		statement: stmt,
+		comments:  []string{comment},
+	}
+	return frags
+}
+
+func StatusFragments(mr *ManagedResource) map[string]*Fragment {
+	namer := mr.Namer()
+	frags := make(map[string]*Fragment)
+	stmt := j.Type().Id(namer.StatusTypeName()).Struct(
+		j.Qual("runtimev1alpha1", "ResourceStatus").Tag(map[string]string{"json": ",inline"}),
+		j.Id("AtProvider").Qual("", namer.AtProviderTypeName()).Tag(map[string]string{"json": ",inline"}),
+	)
+	comment := fmt.Sprintf("A %s defines the observed state of a %s", namer.StatusTypeName(), namer.TypeName())
+	frags[namer.StatusTypeName()] = &Fragment{
+		statement: stmt,
+		comments:  []string{comment},
+	}
+	return frags
+}
+
+// TODO: add comment annotations:
+// +optional
+// +immutable
+// +kubebuilder:object:root=true
+// +kubebuilder:printcolmn...
+func FieldFragments(f Field) map[string]*Fragment {
+	attributes := make([]j.Code, 0)
+	frags := make(map[string]*Fragment)
+	for _, a := range f.Fields {
+		attributes = append(attributes, AttributeStatement(a, f))
+		if a.Type == FieldTypeStruct {
+			for name, frag := range FieldFragments(a) {
+				frags[name] = frag
+			}
+		}
+	}
+	frags[f.Name] = &Fragment{
+		statement: j.Type().Id(f.Name).Struct(attributes...),
+	}
+	return frags
+}
+
+func AttributeStatement(f, parent Field) *j.Statement {
+	id := j.Id(f.Name)
+	if f.IsSlice {
+		id = id.Index()
+	}
+	switch f.Type {
+	case FieldTypeAttribute:
+		id = TypeStatement(f, id)
+	case FieldTypeStruct:
+		// TODO: since you can have an embedded struct, we need to allow
+		// the name to be excluded, and since we can have relative packages
+		// package path can be empty, but we should always have a PackageName
+		path := f.StructField.PackagePath
+		// this check kind of assumes that we don't refer to types that claim to
+		// be in a different package and also nest other types. probably a safe
+		// assumption since nesting should only be for types nested within
+		// the same terraform package
+		if f.StructField.PackagePath == parent.StructField.PackagePath {
+			path = ""
+		}
+		id = id.Qual(path, f.StructField.PackageName)
+	}
+	if f.Tag != nil {
+		if f.Tag.Json != nil {
+			jsonTag := ""
+			if f.Tag.Json.Name != "" {
+				jsonTag = f.Tag.Json.Name
+			}
+			if f.Tag.Json.Inline {
+				jsonTag = jsonTag + ",inline"
+			}
+			if f.Tag.Json.Omitempty {
+				jsonTag = jsonTag + ",omitempty"
+			}
+			id.Tag(map[string]string{"json": jsonTag})
+		}
+	}
+	return id
+}
+
+func TypeStatement(f Field, s *j.Statement) *j.Statement {
+	switch f.AttributeField.Type {
+	case AttributeTypeUintptr:
+		return s.Uintptr()
+	case AttributeTypeUint8:
+		return s.Uint8()
+	case AttributeTypeUint64:
+		return s.Uint64()
+	case AttributeTypeUint32:
+		return s.Uint32()
+	case AttributeTypeUint16:
+		return s.Uint16()
+	case AttributeTypeUint:
+		return s.Uint()
+	case AttributeTypeString:
+		return s.String()
+	case AttributeTypeRune:
+		return s.Rune()
+	case AttributeTypeInt8:
+		return s.Int8()
+	case AttributeTypeInt64:
+		return s.Int64()
+	case AttributeTypeInt32:
+		return s.Int32()
+	case AttributeTypeInt16:
+		return s.Int16()
+	case AttributeTypeInt:
+		return s.Int()
+	case AttributeTypeFloat64:
+		return s.Float64()
+	case AttributeTypeFloat32:
+		return s.Float32()
+	case AttributeTypeComplex64:
+		return s.Complex64()
+	case AttributeTypeComplex128:
+		return s.Complex128()
+	case AttributeTypeByte:
+		return s.Byte()
+	case AttributeTypeBool:
+		return s.Bool()
+	}
+
+	panic(fmt.Sprintf("Unable to determine type for %s", f.Name))
 }
