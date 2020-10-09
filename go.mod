@@ -10,6 +10,7 @@ require (
 	github.com/crossplane/crossplane-runtime v0.9.0
 	github.com/crossplane/crossplane-tools v0.0.0-20200412230150-efd0edd4565b
 	github.com/crossplane/terraform-provider-runtime v0.0.0-00010101000000-000000000000
+	github.com/dave/jennifer v1.3.0
 	github.com/docker/docker v0.7.3-0.20190327010347-be7ac8be2ae0
 	github.com/docker/go-connections v0.4.0 // indirect
 	github.com/docker/go-metrics v0.0.1 // indirect

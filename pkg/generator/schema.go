@@ -50,7 +50,7 @@ func (gen *SchemaGenerator) Generate() error {
 func UnrollBlocks(block *configschema.Block, indent string) {
 	fmt.Println("Attributes")
 	for key, attr := range block.Attributes {
-		fmt.Printf("%s%s(type=%s, computed=%b, optional=%b, required=%b, sensitive=%b\n", indent, key, attr.Type.FriendlyName(), attr.Computed, attr.Optional, attr.Required, attr.Sensitive)
+		fmt.Printf("%s%s(type=%s, computed=%t, optional=%t, required=%t, sensitive=%t\n", indent, key, attr.Type.FriendlyName(), attr.Computed, attr.Optional, attr.Required, attr.Sensitive)
 	}
 	for key, b := range block.BlockTypes {
 		var mode string
