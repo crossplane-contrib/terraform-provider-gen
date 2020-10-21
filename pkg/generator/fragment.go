@@ -36,6 +36,10 @@ func (f *Fragment) FormattedComments() string {
 	fmtd := ""
 	for _, c := range f.comments {
 		for _, line := range strings.Split(c, "\n") {
+			if line == "" {
+				fmtd = fmtd + "\n"
+				continue
+			}
 			fmtd = fmt.Sprintf("%s// %s\n", fmtd, line)
 		}
 	}

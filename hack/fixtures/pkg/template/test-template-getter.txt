@@ -1,1 +1,0 @@
-see tests for TemplateGetter in pkg/templates to understand why this file is here.

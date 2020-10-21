@@ -6,15 +6,20 @@ import (
 	"gopkg.in/alecthomas/kingpin.v2"
 
 	"github.com/crossplane/terraform-provider-gen/cmd/schema"
+	"github.com/crossplane/terraform-provider-gen/pkg/generator"
 	"github.com/crossplane/terraform-provider-runtime/pkg/client"
 )
 
 var (
-	gen          = kingpin.New("terraform-provider-gen", "A cli for interacting with terraform providers.")
-	pluginPath   = gen.Flag("pluginPath", "Path to provider plugin binary.").Required().String()
-	providerName = gen.Flag("providerName", "Terraform provider name, ie the value given to the 'provider' directive in a terraform config.").Required().String()
+	gen = kingpin.New("terraform-provider-gen", "A cli for interacting with terraform providers.")
 
-	schemaCmd     = gen.Command("schema", "subcommand for schema operations.")
+	updateFixturesCmd = gen.Command("update-fixtures", "update test fixtures based on current codegen output")
+	repositoryRoot    = updateFixturesCmd.Flag("repo-root", "Path to root of repository so that the fixture generator can find paths").Required().String()
+
+	schemaCmd    = gen.Command("schema", "subcommand for schema operations.")
+	pluginPath   = schemaCmd.Flag("pluginPath", "Path to provider plugin binary.").Required().String()
+	providerName = schemaCmd.Flag("providerName", "Terraform provider name, ie the value given to the 'provider' directive in a terraform config.").Required().String()
+
 	dumpSchemaCmd = schemaCmd.Command("dump", "Print schema to stdout.")
 	jsonDumpFlag  = dumpSchemaCmd.Flag("json", "Output schema formatted as a json object.").Bool()
 
@@ -43,6 +48,11 @@ func run() error {
 			return err
 		}
 		err = schema.GenerateSchema(onlyGenerateResourceFlag, provider)
+	case updateFixturesCmd.FullCommand():
+		err := generator.UpdateAllFixtures(*repositoryRoot)
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil

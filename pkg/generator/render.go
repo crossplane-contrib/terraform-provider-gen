@@ -1,14 +1,16 @@
 package generator
 
 import (
+	"bytes"
 	"fmt"
 
+	"github.com/crossplane/terraform-provider-gen/pkg/template"
 	j "github.com/dave/jennifer/jen"
 )
 
 const CommentBlankLine = "" // assumes comments are joined with newlines
-const KubebuilderObjectRoot = " +kubebuilder:object:root=true"
-const KubebuilderMarkStatusSubresource = " +kubebuilder:subresource:status"
+const KubebuilderObjectRoot = "+kubebuilder:object:root=true"
+const KubebuilderMarkStatusSubresource = "+kubebuilder:subresource:status"
 
 // RenderManagedResource renders the top-level managed resource object
 // including all subtypes.
@@ -39,7 +41,7 @@ func RenderManagedResourceTypes(mr *ManagedResource) (map[string]string, error) 
 func RenderKubebuilderResourceAnnotation(mr *ManagedResource) string {
 	catCSV := mr.CategoryCSV()
 	if catCSV == "" {
-		return " +kubebuilder:resource:scope=Cluster"
+		return "+kubebuilder:resource:scope=Cluster"
 	}
 	return fmt.Sprintf(" +kubebuilder:resource:scope=Cluster,categories={%s}", catCSV)
 }
@@ -119,11 +121,6 @@ func StatusFragments(mr *ManagedResource) map[string]*Fragment {
 	return frags
 }
 
-// TODO: add comment annotations:
-// +optional
-// +immutable
-// +kubebuilder:object:root=true
-// +kubebuilder:printcolmn...
 func FieldFragments(f Field) map[string]*Fragment {
 	attributes := make([]j.Code, 0)
 	frags := make(map[string]*Fragment)
@@ -224,4 +221,40 @@ func TypeStatement(f Field, s *j.Statement) *j.Statement {
 	}
 
 	panic(fmt.Sprintf("Unable to determine type for %s", f.Name))
+}
+
+type typesRenderParams struct {
+	Resource                  string
+	ResourceList              string
+	ResourceSpec              string
+	ResourceParameters        string
+	ResourceParametersNested  string
+	ResourceStatus            string
+	ResourceObservation       string
+	ResourceObservationNested string
+}
+
+func RenderTypesFile(mr *ManagedResource, tg template.TemplateGetter) (string, error) {
+	tpl, err := tg.Get("hack/template/pkg/generator/types.go.tmpl")
+	if err != nil {
+		return "", err
+	}
+	doubleNewline := "\n\n"
+
+	rendered, err := RenderManagedResourceTypes(mr)
+	if err != nil {
+		return "", err
+	}
+	buf := new(bytes.Buffer)
+	namer := mr.Namer()
+	err = tpl.Execute(buf, typesRenderParams{
+		Resource:       doubleNewline + rendered[namer.TypeName()],
+		ResourceList:   doubleNewline + rendered[namer.TypeListName()],
+		ResourceSpec:   doubleNewline + rendered[namer.SpecTypeName()],
+		ResourceStatus: doubleNewline + rendered[namer.StatusTypeName()],
+	})
+	if err != nil {
+		return "", err
+	}
+	return buf.String(), nil
 }

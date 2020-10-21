@@ -51,13 +51,6 @@ func TestBaseWithValidation(t *testing.T) {
 	}
 }
 
-const fakeResourceName string = "Test"
-const fakePackagePath string = "github.com/crossplane-contrib/fake"
-
-func defaultTestResource() *ManagedResource {
-	return NewManagedResource(fakeResourceName, fakePackagePath).WithNamer(NewDefaultNamer(fakeResourceName))
-}
-
 func TestDefaultIsValid(t *testing.T) {
 	mr := defaultTestResource()
 	_, err := RenderManagedResourceTypes(mr)
