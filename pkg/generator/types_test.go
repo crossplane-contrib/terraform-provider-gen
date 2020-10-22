@@ -26,16 +26,13 @@ func TestBaseWithValidation(t *testing.T) {
 	resourceName := "Test"
 	mr := &ManagedResource{}
 	mr.WithNamer(NewDefaultNamer(resourceName))
-	mrs, err := RenderManagedResourceTypes(mr)
+	err := mr.Validate()
 	expectValidationError(InvalidMRNameEmpty, err, t)
 	expectValidationError(InvalidMRPackagePathEmpty, err, t)
 
 	mr.Name = resourceName
 	mr.PackagePath = "github.com/crossplane-contrib/fake"
-	mrs, err = RenderManagedResourceTypes(mr)
-	if err != nil {
-		t.Errorf("Unexpected error from RenderManagedResourceTypes: %v", err)
-	}
+	actual := ResourceTypeFragment(mr).Render()
 
 	expected := "// +kubebuilder:object:root=true\n" +
 		"\n" +
@@ -50,7 +47,6 @@ func TestBaseWithValidation(t *testing.T) {
 		"	Status TestStatus `json:\"status,omitempty\"`\n" +
 		"}"
 
-	actual := mrs[mr.Namer().TypeName()]
 	if actual != expected {
 		t.Errorf("Unexpected output from jen render.\nExpected:\n ---- \n%s\n ---- \nActual:\n%s", expected, actual)
 	}
@@ -58,23 +54,10 @@ func TestBaseWithValidation(t *testing.T) {
 
 func TestDefaultIsValid(t *testing.T) {
 	mr := defaultTestResource()
-	_, err := RenderManagedResourceTypes(mr)
+	err := mr.Validate()
 	if err != nil {
-		t.Errorf("Unexpected error from RenderManagedResourceTypes: %v", err)
+		t.Errorf("Unexpected error from ManagedResource.Validate(): %v", err)
 	}
-}
-
-func assertRenderExpected(t *testing.T, mr *ManagedResource, typeName string, expected string) error {
-	// checking this error is handled by TestDefaultIsValid
-	mrs, _ := RenderManagedResourceTypes(mr)
-	actual, ok := mrs[typeName]
-	if !ok {
-		return fmt.Errorf("Could not find TypeListName()=%s in output from RenderManagedResourceTypes", typeName)
-	}
-	if actual != expected {
-		return fmt.Errorf("Unexpected output from jen render for %s.\nExpected:\n ---- \n%s\n ---- \nActual:\n%s", typeName, expected, actual)
-	}
-	return nil
 }
 
 func TestResourceList(t *testing.T) {
@@ -87,9 +70,9 @@ func TestResourceList(t *testing.T) {
 		"	metav1.ListMeta `json:\"metadata,omitempty\"`\n" +
 		"	Items           []Test `json:\"items\"`\n" +
 		"}"
-	err := assertRenderExpected(t, mr, mr.Namer().TypeListName(), expected)
-	if err != nil {
-		t.Error(err)
+	actual := TypeListFragment(mr).Render()
+	if actual != expected {
+		t.Errorf("Unexpected output from TypeListFragment.\nExpected:\n ---- \n%s\n ---- \nActual:\n%s", expected, actual)
 	}
 }
 
@@ -100,9 +83,14 @@ func TestSpec(t *testing.T) {
 		"	runtimev1alpha1.ResourceSpec `json:\",inline\"`\n" +
 		"	ForProvider                  TestParameters `json:\",inline\"`\n" +
 		"}"
-	err := assertRenderExpected(t, mr, mr.Namer().SpecTypeName(), expected)
-	if err != nil {
-		t.Error(err)
+	frags := SpecFragments(mr)
+	f, ok := frags[mr.Namer().SpecTypeName()]
+	if !ok {
+		t.Errorf("Did not find the definition for %s in the result of SpecFragments.", mr.Namer().SpecTypeName())
+	}
+	actual := f.Render()
+	if actual != expected {
+		t.Errorf("Unexpected value for %s from SpecFragments.\nExpected:\n ---- \n%s\n ---- \nActual:\n%s", mr.Namer().SpecTypeName(), expected, actual)
 	}
 }
 
@@ -113,9 +101,14 @@ func TestStatus(t *testing.T) {
 		"	runtimev1alpha1.ResourceStatus `json:\",inline\"`\n" +
 		"	AtProvider                     TestObservation `json:\",inline\"`\n" +
 		"}"
-	err := assertRenderExpected(t, mr, mr.Namer().StatusTypeName(), expected)
-	if err != nil {
-		t.Error(err)
+	frags := StatusFragments(mr)
+	f, ok := frags[mr.Namer().StatusTypeName()]
+	if !ok {
+		t.Errorf("Did not find the type definition for %s in the result of StatusFragments.", mr.Namer().StatusTypeName())
+	}
+	actual := f.Render()
+	if actual != expected {
+		t.Errorf("Unexpected value for %s from StatusFragments.\nExpected:\n ---- \n%s\n ---- \nActual:\n%s", mr.Namer().StatusTypeName(), expected, actual)
 	}
 }
 
@@ -239,7 +232,10 @@ func TestAttributeStatementPrimitives(t *testing.T) {
 	}
 
 	frags := FieldFragments(test)
-	actual := frags[fakeResourceName].Render()
+	if len(frags) != 1 {
+		t.Errorf("Expected %d results from FieldFragments, saw %d", 1, len(frags))
+	}
+	actual := frags[0].Render() // assumes single result from FieldFragments
 	expected := "type Test struct {\n" +
 		"	a uintptr\n" +
 		"	b uint8\n" +
@@ -282,7 +278,10 @@ func testTag(t *testing.T, tagJson *StructTagJson, expected string) error {
 		},
 	}
 	frags := FieldFragments(test)
-	actual := frags[fakeResourceName].Render()
+	if len(frags) != 1 {
+		t.Errorf("Expected %d results from FieldFragments, saw %d", 1, len(frags))
+	}
+	actual := frags[0].Render()
 	if actual != expected {
 		return fmt.Errorf("Unexpected output from jen render.\nExpected:\n ---- \n%s\n ---- \nActual:\n%s", expected, actual)
 	}
@@ -361,7 +360,7 @@ func testStructFieldTag(t *testing.T, field Field, expected string) error {
 		},
 	}
 	frags := FieldFragments(test)
-	actual := frags[fakeResourceName].Render()
+	actual := frags[0].Render()
 	if actual != expected {
 		return fmt.Errorf("Unexpected output from jen render.\nExpected:\n ---- \n%s\n ---- \nActual:\n%s", expected, actual)
 	}
@@ -395,12 +394,18 @@ func TestStructFieldTag(t *testing.T) {
 	}
 }
 
+// TestFieldFragmentsNested assumes elements are ordered from outside-in
+// this ordering assumption is important because it translates to how
+// we want things to look in the final output
 func TestFieldFragmentsNested(t *testing.T) {
 	deeplyNestedTypeName := "DeeplyNestedField"
 	nestedTypeName := "NestedField"
 	test := nestedFieldFixture(nestedTypeName, deeplyNestedTypeName)
 	frags := FieldFragments(test)
-	actual := frags[fakeResourceName].Render()
+	if len(frags) != 3 {
+		t.Errorf("Expected %d results from FieldFragments, saw %d", 3, len(frags))
+	}
+	actual := frags[0].Render()
 	expected := "type Test struct {\n" +
 		"	NestedField `json:\"sub_field\"`\n" +
 		"}"
@@ -411,7 +416,13 @@ func TestFieldFragmentsNested(t *testing.T) {
 	expected = "type NestedField struct {\n" +
 		"	DeeplyNestedField `json:\"deeper_sub_field\"`\n" +
 		"}"
-	actual = frags[nestedTypeName].Render()
+	actual = frags[1].Render()
+	if actual != expected {
+		t.Errorf("Unexpected output from jen render.\nExpected:\n ---- \n%s\n ---- \nActual:\n%s", expected, actual)
+	}
+
+	expected = "type DeeplyNestedField struct{}"
+	actual = frags[2].Render()
 	if actual != expected {
 		t.Errorf("Unexpected output from jen render.\nExpected:\n ---- \n%s\n ---- \nActual:\n%s", expected, actual)
 	}

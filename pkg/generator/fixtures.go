@@ -62,20 +62,22 @@ func nestedFieldFixture(nestedTypeName, deeplyNestedTypeName string) Field {
 type fixtureGenerator func(template.TemplateGetter) (string, error)
 
 var (
-	TestRenderTypesFilePath    = "testdata/test-render-types-file.go"
-	TestRenderNestedStatusPath = "testdata/test-render-nested-status.go"
+	TestManagedResourceTypeDefRendererPath = "testdata/test-render-types-file.go"
+	TestRenderNestedStatusPath             = "testdata/test-render-nested-status.go"
 )
 
 var FixtureGenerators map[string]fixtureGenerator = map[string]fixtureGenerator{
-	TestRenderTypesFilePath: func(tg template.TemplateGetter) (string, error) {
+	TestManagedResourceTypeDefRendererPath: func(tg template.TemplateGetter) (string, error) {
 		mr := defaultTestResource()
-		result, err := RenderTypesFile(mr, tg)
+		renderer := NewManagedResourceTypeDefRenderer(mr, tg)
+		result, err := renderer.Render()
 		return result, err
 	},
 	TestRenderNestedStatusPath: func(tg template.TemplateGetter) (string, error) {
 		mr := defaultTestResource()
 		mr.Observation.Fields = []Field{nestedFieldFixture("nestedField", "deeplyNestedField")}
-		return RenderTypesFile(mr, tg)
+		renderer := NewManagedResourceTypeDefRenderer(mr, tg)
+		return renderer.Render()
 	},
 }
 

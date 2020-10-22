@@ -23,8 +23,8 @@ func getFixture(path string) (string, error) {
 	return buf.String(), nil
 }
 
-func TestRenderTypesFile(t *testing.T) {
-	if err := AssertConsistentFixture(TestRenderTypesFilePath); err != nil {
+func TestManagedResourceTypeDefRenderer(t *testing.T) {
+	if err := AssertConsistentFixture(TestManagedResourceTypeDefRendererPath); err != nil {
 		t.Error(err)
 	}
 }
@@ -48,7 +48,7 @@ func AssertConsistentFixture(fixturePath string) error {
 		return err
 	}
 	if actual != expected {
-		return fmt.Errorf("Unexpected output from RenderTypesFile.\nExpected:\n ---- \n%s\n ---- \nActual:\n ---- \n%s\n ---- \n", expected, actual)
+		return fmt.Errorf("Unexpected output from managedResourceTypeDefRenderer.Render().\nExpected:\n ---- \n%s\n ---- \nActual:\n ---- \n%s\n ---- \n", expected, actual)
 	}
 
 	return nil

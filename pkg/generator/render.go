@@ -12,28 +12,6 @@ const CommentBlankLine = "" // assumes comments are joined with newlines
 const KubebuilderObjectRoot = "+kubebuilder:object:root=true"
 const KubebuilderMarkStatusSubresource = "+kubebuilder:subresource:status"
 
-// RenderManagedResource renders the top-level managed resource object
-// including all subtypes.
-// TODO: since we need to break out nested structs into their own named structs,
-// this method should return a map[string]string where each key is the name of the struct
-func RenderManagedResourceTypes(mr *ManagedResource) (map[string]string, error) {
-	namer := mr.Namer()
-	rendered := make(map[string]string)
-	if err := mr.Validate(); err != nil {
-		return nil, err
-	}
-	rendered[namer.TypeName()] = ResourceTypeFragment(mr).Render()
-	rendered[namer.TypeListName()] = TypeListFragment(mr).Render()
-	//rendered[namer.SpecTypeName()] = SpecFragment(mr).Render()
-	for name, frag := range SpecFragments(mr) {
-		rendered[name] = frag.Render()
-	}
-	for name, frag := range StatusFragments(mr) {
-		rendered[name] = frag.Render()
-	}
-	return rendered, nil
-}
-
 // RenderKubebuilderResourceAnnotation renderes the kubebuilder resource tag
 // which indicates whether the resources is namespace- or cluster-scoped
 // and sets the categories field in the CRD which allow kubectl to select
@@ -121,21 +99,22 @@ func StatusFragments(mr *ManagedResource) map[string]*Fragment {
 	return frags
 }
 
-func FieldFragments(f Field) map[string]*Fragment {
+func FieldFragments(f Field) []*Fragment {
 	attributes := make([]j.Code, 0)
-	frags := make(map[string]*Fragment)
+	nested := make([]*Fragment, 0)
 	for _, a := range f.Fields {
 		attributes = append(attributes, AttributeStatement(a, f))
 		if a.Type == FieldTypeStruct {
-			for name, frag := range FieldFragments(a) {
-				frags[name] = frag
+			for _, frag := range FieldFragments(a) {
+				nested = append(nested, frag)
 			}
 		}
 	}
-	frags[f.Name] = &Fragment{
+	// append the nested fields onto the tail so that the results are
+	// in recursive-descentt order.
+	return append([]*Fragment{{
 		statement: j.Type().Id(f.Name).Struct(attributes...),
-	}
-	return frags
+	}}, nested...)
 }
 
 func AttributeStatement(f, parent Field) *j.Statement {
@@ -223,43 +202,50 @@ func TypeStatement(f Field, s *j.Statement) *j.Statement {
 	panic(fmt.Sprintf("Unable to determine type for %s", f.Name))
 }
 
-type typesRenderParams struct {
-	Resource                  string
-	ResourceList              string
-	ResourceSpec              string
-	ResourceParameters        string
-	ResourceParametersNested  string
-	ResourceStatus            string
-	ResourceObservation       string
-	ResourceObservationNested string
+type managedResourceTypeDefRenderer struct {
+	mr *ManagedResource
+	tg template.TemplateGetter
 }
 
-type TypeSourceRenderer struct {
-	namer                  ResourceNamer
-	renderedResources      map[string]string
-	nestedParametersTypes  []string
-	nestedObservationTypes []string
+func NewManagedResourceTypeDefRenderer(mr *ManagedResource, tg template.TemplateGetter) *managedResourceTypeDefRenderer {
+	return &managedResourceTypeDefRenderer{
+		mr: mr,
+		tg: tg,
+	}
 }
 
-func RenderTypesFile(mr *ManagedResource, tg template.TemplateGetter) (string, error) {
-	tpl, err := tg.Get("hack/template/pkg/generator/types.go.tmpl")
+func (tdr *managedResourceTypeDefRenderer) Render() (string, error) {
+	mr := tdr.mr
+	if err := mr.Validate(); err != nil {
+		return "", err
+	}
+	typeDefs := make([]*Fragment, 0)
+
+	typeDefs = append(typeDefs, ResourceTypeFragment(mr))
+	typeDefs = append(typeDefs, TypeListFragment(mr))
+	for _, frag := range SpecFragments(mr) {
+		typeDefs = append(typeDefs, frag)
+	}
+
+	for _, frag := range StatusFragments(mr) {
+		typeDefs = append(typeDefs, frag)
+	}
+
+	tpl, err := tdr.tg.Get("hack/template/pkg/generator/types.go.tmpl")
 	if err != nil {
 		return "", err
 	}
-	doubleNewline := "\n\n"
 
-	rendered, err := RenderManagedResourceTypes(mr)
-	if err != nil {
-		return "", err
+	typeDefsString := ""
+	for _, f := range typeDefs {
+		typeDefsString = fmt.Sprintf("%s\n\n%s", typeDefsString, f.Render())
 	}
+
 	buf := new(bytes.Buffer)
-	namer := mr.Namer()
-	err = tpl.Execute(buf, typesRenderParams{
-		Resource:       doubleNewline + rendered[namer.TypeName()],
-		ResourceList:   doubleNewline + rendered[namer.TypeListName()],
-		ResourceSpec:   doubleNewline + rendered[namer.SpecTypeName()],
-		ResourceStatus: doubleNewline + rendered[namer.StatusTypeName()],
-	})
+	tplParams := struct {
+		TypeDefs string
+	}{typeDefsString}
+	err = tpl.Execute(buf, tplParams)
 	if err != nil {
 		return "", err
 	}
