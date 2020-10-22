@@ -56,6 +56,5 @@ func AssertConsistentFixture(fixturePath string) error {
 	if actual != expected {
 		return fmt.Errorf("Unexpected output from managedResourceTypeDefRenderer.Render().\nExpected:\n ---- \n%s\n ---- \nActual:\n ---- \n%s\n ---- \n", expected, actual)
 	}
-
 	return nil
 }

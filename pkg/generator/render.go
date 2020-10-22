@@ -96,18 +96,31 @@ func ForProviderFragments(mr *ManagedResource) []*Fragment {
 	return frags
 }
 
-func StatusFragments(mr *ManagedResource) []*Fragment {
+func StatusFragment(mr *ManagedResource) *Fragment {
 	namer := mr.Namer()
 	stmt := j.Type().Id(namer.StatusTypeName()).Struct(
 		j.Qual("runtimev1alpha1", "ResourceStatus").Tag(map[string]string{"json": ",inline"}),
 		j.Id("AtProvider").Qual("", namer.AtProviderTypeName()).Tag(map[string]string{"json": ",inline"}),
 	)
 	comment := fmt.Sprintf("A %s defines the observed state of a %s", namer.StatusTypeName(), namer.TypeName())
-	return []*Fragment{{
+	return &Fragment{
 		name:      namer.StatusTypeName(),
 		statement: stmt,
 		comments:  []string{comment},
-	}}
+	}
+}
+
+func AtProviderFragments(mr *ManagedResource) []*Fragment {
+	namer := mr.Namer()
+	if mr.Observation.StructField.TypeName != namer.AtProviderTypeName() {
+		mr.Observation.StructField.TypeName = namer.AtProviderTypeName()
+	}
+	frags := FieldFragments(mr.Observation)
+	// frags[0] is the outermost element, aka AtProvider
+	frags[0].comments = []string{
+		fmt.Sprintf("A %s records the observed state of a %s", namer.AtProviderTypeName(), namer.TypeName()),
+	}
+	return frags
 }
 
 func FieldFragments(f Field) []*Fragment {
@@ -240,7 +253,8 @@ func (tdr *managedResourceTypeDefRenderer) Render() (string, error) {
 		typeDefs = append(typeDefs, frag)
 	}
 
-	for _, frag := range StatusFragments(mr) {
+	typeDefs = append(typeDefs, StatusFragment(mr))
+	for _, frag := range AtProviderFragments(mr) {
 		typeDefs = append(typeDefs, frag)
 	}
 

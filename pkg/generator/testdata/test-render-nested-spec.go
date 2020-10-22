@@ -52,10 +52,10 @@ type TestSpec struct {
 
 // A TestParameters defines the desired state of a Test
 type TestParameters struct {
-	TestName Test
+	SubParametersName SubParameters
 }
 
-type Test struct {
+type SubParameters struct {
 	nestedFieldName nestedField `json:"sub_field"`
 }
 
@@ -72,3 +72,6 @@ type TestStatus struct {
 	runtimev1alpha1.ResourceStatus `json:",inline"`
 	AtProvider                     TestObservation `json:",inline"`
 }
+
+// A TestObservation records the observed state of a Test
+type TestObservation struct{}

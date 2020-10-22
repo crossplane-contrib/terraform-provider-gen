@@ -15,8 +15,9 @@ func defaultTestResource() *ManagedResource {
 	return NewManagedResource(fakeResourceName, fakePackagePath).WithNamer(NewDefaultNamer(fakeResourceName))
 }
 
-func nestedFieldFixture(nestedTypeName, deeplyNestedTypeName string) Field {
+func nestedFieldFixture(outerTypeName, nestedTypeName, deeplyNestedTypeName string) Field {
 	f := Field{
+		// "Name" is appended to help visually differentiate field and type names
 		Name: deeplyNestedTypeName + "Name",
 		Type: FieldTypeStruct,
 		StructField: StructField{
@@ -42,6 +43,7 @@ func nestedFieldFixture(nestedTypeName, deeplyNestedTypeName string) Field {
 		},
 	}
 	nf := Field{
+		// "Name" is appended to help visually differentiate field and type names
 		Name: nestedTypeName + "Name",
 		Type: FieldTypeStruct,
 		StructField: StructField{
@@ -58,11 +60,12 @@ func nestedFieldFixture(nestedTypeName, deeplyNestedTypeName string) Field {
 		},
 	}
 	test := Field{
-		Name: fakeResourceName + "Name",
+		// "Name" is appended to help visually differentiate field and type names
+		Name: outerTypeName + "Name",
 		Type: FieldTypeStruct,
 		StructField: StructField{
 			PackagePath: fakePackagePath,
-			TypeName:    fakeResourceName,
+			TypeName:    outerTypeName,
 		},
 		Fields: []Field{
 			nf,
@@ -88,7 +91,11 @@ var FixtureGenerators map[string]fixtureGenerator = map[string]fixtureGenerator{
 	},
 	TestRenderNestedStatusPath: func(tg template.TemplateGetter) (string, error) {
 		mr := defaultTestResource()
-		mr.Observation.Fields = []Field{nestedFieldFixture("nestedField", "deeplyNestedField")}
+		// TODO: wonky thing that we have to do to satisfy matching package names to exclude
+		// the qualifier. Might want to add fakePackagePath as an arg to the fixture instead
+		// of assuming it everywhere
+		mr.Observation.StructField.PackagePath = fakePackagePath
+		mr.Observation.Fields = []Field{nestedFieldFixture("SubObservation", "nestedField", "deeplyNestedField")}
 		renderer := NewManagedResourceTypeDefRenderer(mr, tg)
 		return renderer.Render()
 	},
@@ -98,7 +105,7 @@ var FixtureGenerators map[string]fixtureGenerator = map[string]fixtureGenerator{
 		// the qualifier. Might want to add fakePackagePath as an arg to the fixture instead
 		// of assuming it everywhere
 		mr.Parameters.StructField.PackagePath = fakePackagePath
-		mr.Parameters.Fields = []Field{nestedFieldFixture("nestedField", "deeplyNestedField")}
+		mr.Parameters.Fields = []Field{nestedFieldFixture("SubParameters", "nestedField", "deeplyNestedField")}
 		renderer := NewManagedResourceTypeDefRenderer(mr, tg)
 		return renderer.Render()
 	},

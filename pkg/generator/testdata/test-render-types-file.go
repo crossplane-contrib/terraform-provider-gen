@@ -58,3 +58,6 @@ type TestStatus struct {
 	runtimev1alpha1.ResourceStatus `json:",inline"`
 	AtProvider                     TestObservation `json:",inline"`
 }
+
+// A TestObservation records the observed state of a Test
+type TestObservation struct{}

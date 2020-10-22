@@ -85,7 +85,7 @@ func TestSpec(t *testing.T) {
 		"}"
 	actual := SpecFragment(mr).Render()
 	if actual != expected {
-		t.Errorf("Unexpected value for %s from SpecFragments.\nExpected:\n ---- \n%s\n ---- \nActual:\n%s", mr.Namer().SpecTypeName(), expected, actual)
+		t.Errorf("Unexpected value for SpecFragment.\nExpected:\n ---- \n%s\n ---- \nActual:\n%s", expected, actual)
 	}
 }
 
@@ -96,15 +96,9 @@ func TestStatus(t *testing.T) {
 		"	runtimev1alpha1.ResourceStatus `json:\",inline\"`\n" +
 		"	AtProvider                     TestObservation `json:\",inline\"`\n" +
 		"}"
-	frags := StatusFragments(mr)
-	f := frags[0]
-	name := mr.Namer().StatusTypeName()
-	if f.name != name {
-		t.Errorf("Did not find the definition for %s in the result of StatusFragments.", name)
-	}
-	actual := f.Render()
+	actual := StatusFragment(mr).Render()
 	if actual != expected {
-		t.Errorf("Unexpected value for %s from StatusFragments.\nExpected:\n ---- \n%s\n ---- \nActual:\n%s", name, expected, actual)
+		t.Errorf("Unexpected value for StatusFragment.\nExpected:\n ---- \n%s\n ---- \nActual:\n%s", expected, actual)
 	}
 }
 
@@ -393,7 +387,7 @@ func TestStructFieldTag(t *testing.T) {
 func TestFieldFragmentsNested(t *testing.T) {
 	deeplyNestedTypeName := "DeeplyNestedField"
 	nestedTypeName := "NestedField"
-	test := nestedFieldFixture(nestedTypeName, deeplyNestedTypeName)
+	test := nestedFieldFixture(fakeResourceName, nestedTypeName, deeplyNestedTypeName)
 	frags := FieldFragments(test)
 	if len(frags) != 3 {
 		t.Errorf("Expected %d results from FieldFragments, saw %d", 3, len(frags))
