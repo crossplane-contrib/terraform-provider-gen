@@ -234,6 +234,13 @@ type typesRenderParams struct {
 	ResourceObservationNested string
 }
 
+type TypeSourceRenderer struct {
+	namer                  ResourceNamer
+	renderedResources      map[string]string
+	nestedParametersTypes  []string
+	nestedObservationTypes []string
+}
+
 func RenderTypesFile(mr *ManagedResource, tg template.TemplateGetter) (string, error) {
 	tpl, err := tg.Get("hack/template/pkg/generator/types.go.tmpl")
 	if err != nil {

@@ -24,17 +24,32 @@ func getFixture(path string) (string, error) {
 }
 
 func TestRenderTypesFile(t *testing.T) {
-	tg := template.NewTemplateGetter("../../")
-	actual, fxpath, err := getTestRenderTypesFileResult(tg)
-	expected, err := getFixture(fxpath)
-	if err != nil {
+	if err := AssertConsistentFixture(TestRenderTypesFilePath); err != nil {
 		t.Error(err)
+	}
+}
+
+func TestRenderNestedStatus(t *testing.T) {
+	if err := AssertConsistentFixture(TestRenderNestedStatusPath); err != nil {
+		t.Error(err)
+	}
+}
+
+func AssertConsistentFixture(fixturePath string) error {
+	tg := template.NewTemplateGetter("../../")
+	fr := FixtureGenerators[fixturePath]
+	actual, err := fr(tg)
+	if err != nil {
+		return err
 	}
 
+	expected, err := getFixture(TestRenderNestedStatusPath)
 	if err != nil {
-		t.Error(err)
+		return err
 	}
 	if actual != expected {
-		t.Errorf("Unexpected output from RenderTypesFile.\nExpected:\n ---- \n%s\n ---- \nActual:\n ---- \n%s\n ---- \n", expected, actual)
+		return fmt.Errorf("Unexpected output from RenderTypesFile.\nExpected:\n ---- \n%s\n ---- \nActual:\n ---- \n%s\n ---- \n", expected, actual)
 	}
+
+	return nil
 }

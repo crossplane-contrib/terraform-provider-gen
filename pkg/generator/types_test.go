@@ -37,7 +37,12 @@ func TestBaseWithValidation(t *testing.T) {
 		t.Errorf("Unexpected error from RenderManagedResourceTypes: %v", err)
 	}
 
-	expected := "type Test struct {\n" +
+	expected := "// +kubebuilder:object:root=true\n" +
+		"\n" +
+		"// Test is a managed resource representing a resource mirrored in the cloud\n" +
+		"// +kubebuilder:subresource:status\n" +
+		"// +kubebuilder:resource:scope=Cluster\n" +
+		"type Test struct {\n" +
 		"	metav1.TypeMeta   `json:\",inline\"`\n" +
 		"	metav1.ObjectMeta `json:\"metadata,omitempty\"`\n" +
 		"\n" +
@@ -74,7 +79,9 @@ func assertRenderExpected(t *testing.T, mr *ManagedResource, typeName string, ex
 
 func TestResourceList(t *testing.T) {
 	mr := defaultTestResource()
-	expected := "// Test contains a list of TestList\n" +
+	expected := "// +kubebuilder:object:root=true\n" +
+		"\n" +
+		"// Test contains a list of TestList\n" +
 		"type TestList struct {\n" +
 		"	metav1.TypeMeta `json:\",inline\"`\n" +
 		"	metav1.ListMeta `json:\"metadata,omitempty\"`\n" +
@@ -391,46 +398,7 @@ func TestStructFieldTag(t *testing.T) {
 func TestFieldFragmentsNested(t *testing.T) {
 	deeplyNestedTypeName := "DeeplyNestedField"
 	nestedTypeName := "NestedField"
-	f := Field{
-		Name: deeplyNestedTypeName,
-		Type: FieldTypeStruct,
-		StructField: StructField{
-			PackagePath: fakePackagePath,
-			PackageName: "",
-		},
-		Tag: &StructTag{
-			Json: &StructTagJson{
-				Name: "deeper_sub_field",
-			},
-		},
-	}
-	nf := Field{
-		Name: nestedTypeName,
-		Type: FieldTypeStruct,
-		StructField: StructField{
-			PackagePath: fakePackagePath,
-			PackageName: "",
-		},
-		Fields: []Field{
-			f,
-		},
-		Tag: &StructTag{
-			Json: &StructTagJson{
-				Name: "sub_field",
-			},
-		},
-	}
-	test := Field{
-		Name: fakeResourceName,
-		Type: FieldTypeStruct,
-		StructField: StructField{
-			PackagePath: fakePackagePath,
-			PackageName: "PackageName",
-		},
-		Fields: []Field{
-			nf,
-		},
-	}
+	test := nestedFieldFixture(nestedTypeName, deeplyNestedTypeName)
 	frags := FieldFragments(test)
 	actual := frags[fakeResourceName].Render()
 	expected := "type Test struct {\n" +
