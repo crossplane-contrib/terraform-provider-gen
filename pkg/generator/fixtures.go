@@ -17,11 +17,23 @@ func defaultTestResource() *ManagedResource {
 
 func nestedFieldFixture(nestedTypeName, deeplyNestedTypeName string) Field {
 	f := Field{
-		Name: deeplyNestedTypeName,
+		Name: deeplyNestedTypeName + "Name",
 		Type: FieldTypeStruct,
 		StructField: StructField{
 			PackagePath: fakePackagePath,
-			PackageName: "",
+			TypeName:    deeplyNestedTypeName,
+		},
+		Fields: []Field{
+			{
+				Name:           "aString",
+				Type:           FieldTypeAttribute,
+				AttributeField: AttributeField{Type: AttributeTypeString},
+				Tag: &StructTag{
+					Json: &StructTagJson{
+						Name: "a_string",
+					},
+				},
+			},
 		},
 		Tag: &StructTag{
 			Json: &StructTagJson{
@@ -30,11 +42,11 @@ func nestedFieldFixture(nestedTypeName, deeplyNestedTypeName string) Field {
 		},
 	}
 	nf := Field{
-		Name: nestedTypeName,
+		Name: nestedTypeName + "Name",
 		Type: FieldTypeStruct,
 		StructField: StructField{
 			PackagePath: fakePackagePath,
-			PackageName: "",
+			TypeName:    nestedTypeName,
 		},
 		Fields: []Field{
 			f,
@@ -46,11 +58,11 @@ func nestedFieldFixture(nestedTypeName, deeplyNestedTypeName string) Field {
 		},
 	}
 	test := Field{
-		Name: fakeResourceName,
+		Name: fakeResourceName + "Name",
 		Type: FieldTypeStruct,
 		StructField: StructField{
 			PackagePath: fakePackagePath,
-			PackageName: "PackageName",
+			TypeName:    fakeResourceName,
 		},
 		Fields: []Field{
 			nf,
@@ -64,6 +76,7 @@ type fixtureGenerator func(template.TemplateGetter) (string, error)
 var (
 	TestManagedResourceTypeDefRendererPath = "testdata/test-render-types-file.go"
 	TestRenderNestedStatusPath             = "testdata/test-render-nested-status.go"
+	TestRenderNestedSpecPath               = "testdata/test-render-nested-spec.go"
 )
 
 var FixtureGenerators map[string]fixtureGenerator = map[string]fixtureGenerator{
@@ -76,6 +89,16 @@ var FixtureGenerators map[string]fixtureGenerator = map[string]fixtureGenerator{
 	TestRenderNestedStatusPath: func(tg template.TemplateGetter) (string, error) {
 		mr := defaultTestResource()
 		mr.Observation.Fields = []Field{nestedFieldFixture("nestedField", "deeplyNestedField")}
+		renderer := NewManagedResourceTypeDefRenderer(mr, tg)
+		return renderer.Render()
+	},
+	TestRenderNestedSpecPath: func(tg template.TemplateGetter) (string, error) {
+		mr := defaultTestResource()
+		// TODO: wonky thing that we have to do to satisfy matching package names to exclude
+		// the qualifier. Might want to add fakePackagePath as an arg to the fixture instead
+		// of assuming it everywhere
+		mr.Parameters.StructField.PackagePath = fakePackagePath
+		mr.Parameters.Fields = []Field{nestedFieldFixture("nestedField", "deeplyNestedField")}
 		renderer := NewManagedResourceTypeDefRenderer(mr, tg)
 		return renderer.Render()
 	},

@@ -69,18 +69,31 @@ func TypeListFragment(mr *ManagedResource) *Fragment {
 	}
 }
 
-func SpecFragments(mr *ManagedResource) []*Fragment {
+func SpecFragment(mr *ManagedResource) *Fragment {
 	namer := mr.Namer()
 	stmt := j.Type().Id(namer.SpecTypeName()).Struct(
 		j.Qual("runtimev1alpha1", "ResourceSpec").Tag(map[string]string{"json": ",inline"}),
 		j.Id("ForProvider").Qual("", namer.ForProviderTypeName()).Tag(map[string]string{"json": ",inline"}),
 	)
 	comment := fmt.Sprintf("A %s defines the desired state of a %s", namer.SpecTypeName(), namer.TypeName())
-	return []*Fragment{{
+	return &Fragment{
 		name:      namer.SpecTypeName(),
 		statement: stmt,
 		comments:  []string{comment},
-	}}
+	}
+}
+
+func ForProviderFragments(mr *ManagedResource) []*Fragment {
+	namer := mr.Namer()
+	if mr.Parameters.StructField.TypeName != namer.ForProviderTypeName() {
+		mr.Parameters.StructField.TypeName = namer.ForProviderTypeName()
+	}
+	frags := FieldFragments(mr.Parameters)
+	// frags[0] is the outermost element, aka ForProvider
+	frags[0].comments = []string{
+		fmt.Sprintf("A %s defines the desired state of a %s", namer.ForProviderTypeName(), namer.TypeName()),
+	}
+	return frags
 }
 
 func StatusFragments(mr *ManagedResource) []*Fragment {
@@ -112,7 +125,7 @@ func FieldFragments(f Field) []*Fragment {
 	// in recursive-descent order.
 	return append([]*Fragment{{
 		name:      f.Name,
-		statement: j.Type().Id(f.Name).Struct(attributes...),
+		statement: j.Type().Id(f.StructField.TypeName).Struct(attributes...),
 	}}, nested...)
 }
 
@@ -127,7 +140,7 @@ func AttributeStatement(f, parent Field) *j.Statement {
 	case FieldTypeStruct:
 		// TODO: since you can have an embedded struct, we need to allow
 		// the name to be excluded, and since we can have relative packages
-		// package path can be empty, but we should always have a PackageName
+		// package path can be empty, but we should always have a TypeName
 		path := f.StructField.PackagePath
 		// this check kind of assumes that we don't refer to types that claim to
 		// be in a different package and also nest other types. probably a safe
@@ -136,7 +149,7 @@ func AttributeStatement(f, parent Field) *j.Statement {
 		if f.StructField.PackagePath == parent.StructField.PackagePath {
 			path = ""
 		}
-		id = id.Qual(path, f.StructField.PackageName)
+		id = id.Qual(path, f.StructField.TypeName)
 	}
 	if f.Tag != nil {
 		if f.Tag.Json != nil {
@@ -222,7 +235,8 @@ func (tdr *managedResourceTypeDefRenderer) Render() (string, error) {
 
 	typeDefs = append(typeDefs, ResourceTypeFragment(mr))
 	typeDefs = append(typeDefs, TypeListFragment(mr))
-	for _, frag := range SpecFragments(mr) {
+	typeDefs = append(typeDefs, SpecFragment(mr))
+	for _, frag := range ForProviderFragments(mr) {
 		typeDefs = append(typeDefs, frag)
 	}
 

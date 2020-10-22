@@ -50,6 +50,9 @@ type TestSpec struct {
 	ForProvider                  TestParameters `json:",inline"`
 }
 
+// A TestParameters defines the desired state of a Test
+type TestParameters struct{}
+
 // A TestStatus defines the observed state of a Test
 type TestStatus struct {
 	runtimev1alpha1.ResourceStatus `json:",inline"`

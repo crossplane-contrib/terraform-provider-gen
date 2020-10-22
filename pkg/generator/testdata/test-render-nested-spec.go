@@ -51,7 +51,21 @@ type TestSpec struct {
 }
 
 // A TestParameters defines the desired state of a Test
-type TestParameters struct{}
+type TestParameters struct {
+	TestName Test
+}
+
+type Test struct {
+	nestedFieldName nestedField `json:"sub_field"`
+}
+
+type nestedField struct {
+	deeplyNestedFieldName deeplyNestedField `json:"deeper_sub_field"`
+}
+
+type deeplyNestedField struct {
+	aString string `json:"a_string"`
+}
 
 // A TestStatus defines the observed state of a Test
 type TestStatus struct {

@@ -83,14 +83,7 @@ func TestSpec(t *testing.T) {
 		"	runtimev1alpha1.ResourceSpec `json:\",inline\"`\n" +
 		"	ForProvider                  TestParameters `json:\",inline\"`\n" +
 		"}"
-	frags := SpecFragments(mr)
-	// assumes the Spec is the first field in the SpecFragments result due to recursive ordering
-	f := frags[0]
-	name := mr.Namer().SpecTypeName()
-	if f.name != name {
-		t.Errorf("Did not find the definition for %s in the result of SpecFragments.", name)
-	}
-	actual := f.Render()
+	actual := SpecFragment(mr).Render()
 	if actual != expected {
 		t.Errorf("Unexpected value for %s from SpecFragments.\nExpected:\n ---- \n%s\n ---- \nActual:\n%s", mr.Namer().SpecTypeName(), expected, actual)
 	}
@@ -107,7 +100,7 @@ func TestStatus(t *testing.T) {
 	f := frags[0]
 	name := mr.Namer().StatusTypeName()
 	if f.name != name {
-		t.Errorf("Did not find the definition for %s in the result of SpecFragments.", name)
+		t.Errorf("Did not find the definition for %s in the result of StatusFragments.", name)
 	}
 	actual := f.Render()
 	if actual != expected {
@@ -129,13 +122,13 @@ func TestAttributeStatementStruct(t *testing.T) {
 		Type: FieldTypeStruct,
 		StructField: StructField{
 			PackagePath: fakePackagePath,
-			PackageName: "PackageName",
+			TypeName:    "TypeName",
 		},
 	}
 	stmt := j.Type().Id("fakeStruct").Struct(AttributeStatement(test, parent))
 	actual := renderStatement(stmt)
 	expected := "type fakeStruct struct {\n" +
-		"	Fieldname PackageName\n" +
+		"	Fieldname TypeName\n" +
 		"}"
 	if actual != expected {
 		t.Errorf("Unexpected output from jen render.\nExpected:\n ---- \n%s\n ---- \nActual:\n%s", expected, actual)
@@ -147,7 +140,7 @@ func TestAttributeStatementStruct(t *testing.T) {
 	actual = renderStatement(stmt)
 	// this is because jen chops the qualifier down to the imported -package
 	expected = "type fakeStruct struct {\n" +
-		"	Fieldname different.PackageName\n" +
+		"	Fieldname different.TypeName\n" +
 		"}"
 	if actual != expected {
 		t.Errorf("Unexpected output from jen render.\nExpected:\n ---- \n%s\n ---- \nActual:\n%s", expected, actual)
@@ -159,7 +152,7 @@ func TestAttributeStatementStruct(t *testing.T) {
 	stmt = j.Type().Id("fakeStruct").Struct(AttributeStatement(test, parent))
 	actual = renderStatement(stmt)
 	expected = "type fakeStruct struct {\n" +
-		"	different.PackageName\n" +
+		"	different.TypeName\n" +
 		"}"
 	if actual != expected {
 		t.Errorf("Unexpected output from jen render.\nExpected:\n ---- \n%s\n ---- \nActual:\n%s", expected, actual)
@@ -193,7 +186,7 @@ func ezStructField(name, pkgPath, pkgName string, opts ...fieldOpt) Field {
 		Name: name,
 		Type: FieldTypeStruct,
 		StructField: StructField{
-			PackageName: pkgName,
+			TypeName:    pkgName,
 			PackagePath: pkgPath,
 		},
 	}
@@ -205,11 +198,10 @@ func ezStructField(name, pkgPath, pkgName string, opts ...fieldOpt) Field {
 
 func TestAttributeStatementPrimitives(t *testing.T) {
 	test := Field{
-		Name: fakeResourceName,
 		Type: FieldTypeStruct,
 		StructField: StructField{
 			PackagePath: fakePackagePath,
-			PackageName: "PackageName",
+			TypeName:    fakeResourceName,
 		},
 		Fields: []Field{
 			ezAttrField("a", AttributeTypeUintptr),
@@ -270,11 +262,10 @@ func testTag(t *testing.T, tagJson *StructTagJson, expected string) error {
 		Json: tagJson,
 	}
 	test := Field{
-		Name: fakeResourceName,
 		Type: FieldTypeStruct,
 		StructField: StructField{
 			PackagePath: fakePackagePath,
-			PackageName: "PackageName",
+			TypeName:    fakeResourceName,
 		},
 		Fields: []Field{
 			ezAttrField("a", AttributeTypeUintptr, withFieldTag(tag)),
@@ -352,11 +343,10 @@ func TestAttrFieldTags(t *testing.T) {
 
 func testStructFieldTag(t *testing.T, field Field, expected string) error {
 	test := Field{
-		Name: fakeResourceName,
 		Type: FieldTypeStruct,
 		StructField: StructField{
 			PackagePath: fakePackagePath,
-			PackageName: "PackageName",
+			TypeName:    fakeResourceName,
 		},
 		Fields: []Field{
 			field,
@@ -376,7 +366,7 @@ func TestStructFieldTag(t *testing.T) {
 		Type: FieldTypeStruct,
 		StructField: StructField{
 			PackagePath: fakePackagePath,
-			PackageName: "AnotherName",
+			TypeName:    "AnotherName",
 		},
 		Tag: &StructTag{
 			Json: &StructTagJson{
@@ -410,21 +400,23 @@ func TestFieldFragmentsNested(t *testing.T) {
 	}
 	actual := frags[0].Render()
 	expected := "type Test struct {\n" +
-		"	NestedField `json:\"sub_field\"`\n" +
+		"	NestedFieldName NestedField `json:\"sub_field\"`\n" +
 		"}"
 	if actual != expected {
 		t.Errorf("Unexpected output from jen render.\nExpected:\n ---- \n%s\n ---- \nActual:\n%s", expected, actual)
 	}
 
 	expected = "type NestedField struct {\n" +
-		"	DeeplyNestedField `json:\"deeper_sub_field\"`\n" +
+		"	DeeplyNestedFieldName DeeplyNestedField `json:\"deeper_sub_field\"`\n" +
 		"}"
 	actual = frags[1].Render()
 	if actual != expected {
 		t.Errorf("Unexpected output from jen render.\nExpected:\n ---- \n%s\n ---- \nActual:\n%s", expected, actual)
 	}
 
-	expected = "type DeeplyNestedField struct{}"
+	expected = "type DeeplyNestedField struct {\n" +
+		"	aString string `json:\"a_string\"`\n" +
+		"}"
 	actual = frags[2].Render()
 	if actual != expected {
 		t.Errorf("Unexpected output from jen render.\nExpected:\n ---- \n%s\n ---- \nActual:\n%s", expected, actual)

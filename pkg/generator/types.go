@@ -67,7 +67,7 @@ type Field struct {
 
 type StructField struct {
 	PackagePath string
-	PackageName string
+	TypeName    string
 }
 
 type AttributeField struct {

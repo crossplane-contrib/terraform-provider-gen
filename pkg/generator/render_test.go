@@ -35,6 +35,12 @@ func TestRenderNestedStatus(t *testing.T) {
 	}
 }
 
+func TestRenderNestedSpec(t *testing.T) {
+	if err := AssertConsistentFixture(TestRenderNestedSpecPath); err != nil {
+		t.Error(err)
+	}
+}
+
 func AssertConsistentFixture(fixturePath string) error {
 	tg := template.NewTemplateGetter("../../")
 	fr := FixtureGenerators[fixturePath]
@@ -43,7 +49,7 @@ func AssertConsistentFixture(fixturePath string) error {
 		return err
 	}
 
-	expected, err := getFixture(TestRenderNestedStatusPath)
+	expected, err := getFixture(fixturePath)
 	if err != nil {
 		return err
 	}
