@@ -84,9 +84,11 @@ func TestSpec(t *testing.T) {
 		"	ForProvider                  TestParameters `json:\",inline\"`\n" +
 		"}"
 	frags := SpecFragments(mr)
-	f, ok := frags[mr.Namer().SpecTypeName()]
-	if !ok {
-		t.Errorf("Did not find the definition for %s in the result of SpecFragments.", mr.Namer().SpecTypeName())
+	// assumes the Spec is the first field in the SpecFragments result due to recursive ordering
+	f := frags[0]
+	name := mr.Namer().SpecTypeName()
+	if f.name != name {
+		t.Errorf("Did not find the definition for %s in the result of SpecFragments.", name)
 	}
 	actual := f.Render()
 	if actual != expected {
@@ -102,13 +104,14 @@ func TestStatus(t *testing.T) {
 		"	AtProvider                     TestObservation `json:\",inline\"`\n" +
 		"}"
 	frags := StatusFragments(mr)
-	f, ok := frags[mr.Namer().StatusTypeName()]
-	if !ok {
-		t.Errorf("Did not find the type definition for %s in the result of StatusFragments.", mr.Namer().StatusTypeName())
+	f := frags[0]
+	name := mr.Namer().StatusTypeName()
+	if f.name != name {
+		t.Errorf("Did not find the definition for %s in the result of SpecFragments.", name)
 	}
 	actual := f.Render()
 	if actual != expected {
-		t.Errorf("Unexpected value for %s from StatusFragments.\nExpected:\n ---- \n%s\n ---- \nActual:\n%s", mr.Namer().StatusTypeName(), expected, actual)
+		t.Errorf("Unexpected value for %s from StatusFragments.\nExpected:\n ---- \n%s\n ---- \nActual:\n%s", name, expected, actual)
 	}
 }
 

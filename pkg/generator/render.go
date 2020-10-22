@@ -69,34 +69,32 @@ func TypeListFragment(mr *ManagedResource) *Fragment {
 	}
 }
 
-func SpecFragments(mr *ManagedResource) map[string]*Fragment {
+func SpecFragments(mr *ManagedResource) []*Fragment {
 	namer := mr.Namer()
-	frags := make(map[string]*Fragment)
 	stmt := j.Type().Id(namer.SpecTypeName()).Struct(
 		j.Qual("runtimev1alpha1", "ResourceSpec").Tag(map[string]string{"json": ",inline"}),
 		j.Id("ForProvider").Qual("", namer.ForProviderTypeName()).Tag(map[string]string{"json": ",inline"}),
 	)
 	comment := fmt.Sprintf("A %s defines the desired state of a %s", namer.SpecTypeName(), namer.TypeName())
-	frags[namer.SpecTypeName()] = &Fragment{
+	return []*Fragment{{
+		name:      namer.SpecTypeName(),
 		statement: stmt,
 		comments:  []string{comment},
-	}
-	return frags
+	}}
 }
 
-func StatusFragments(mr *ManagedResource) map[string]*Fragment {
+func StatusFragments(mr *ManagedResource) []*Fragment {
 	namer := mr.Namer()
-	frags := make(map[string]*Fragment)
 	stmt := j.Type().Id(namer.StatusTypeName()).Struct(
 		j.Qual("runtimev1alpha1", "ResourceStatus").Tag(map[string]string{"json": ",inline"}),
 		j.Id("AtProvider").Qual("", namer.AtProviderTypeName()).Tag(map[string]string{"json": ",inline"}),
 	)
 	comment := fmt.Sprintf("A %s defines the observed state of a %s", namer.StatusTypeName(), namer.TypeName())
-	frags[namer.StatusTypeName()] = &Fragment{
+	return []*Fragment{{
+		name:      namer.StatusTypeName(),
 		statement: stmt,
 		comments:  []string{comment},
-	}
-	return frags
+	}}
 }
 
 func FieldFragments(f Field) []*Fragment {
@@ -111,8 +109,9 @@ func FieldFragments(f Field) []*Fragment {
 		}
 	}
 	// append the nested fields onto the tail so that the results are
-	// in recursive-descentt order.
+	// in recursive-descent order.
 	return append([]*Fragment{{
+		name:      f.Name,
 		statement: j.Type().Id(f.Name).Struct(attributes...),
 	}}, nested...)
 }

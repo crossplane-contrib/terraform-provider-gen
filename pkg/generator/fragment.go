@@ -16,6 +16,7 @@ func renderStatement(s *j.Statement) string {
 // type we are trying to avoid in order to use Jen to only render more complex fragments
 // on the assumption that go templates will be more readable for files.
 type Fragment struct {
+	name      string
 	comments  []string
 	statement *j.Statement
 }
