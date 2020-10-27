@@ -1,7 +1,7 @@
 package schema
 
 import (
-	"github.com/crossplane/terraform-provider-gen/pkg/generator"
+	"github.com/crossplane-contrib/terraform-provider-gen/pkg/generator"
 	"github.com/crossplane/terraform-provider-runtime/pkg/client"
 )
 

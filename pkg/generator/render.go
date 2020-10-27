@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"fmt"
 
-	"github.com/crossplane/terraform-provider-gen/pkg/template"
+	"github.com/crossplane-contrib/terraform-provider-gen/pkg/template"
 	j "github.com/dave/jennifer/jen"
 )
 

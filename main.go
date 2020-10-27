@@ -5,8 +5,8 @@ import (
 
 	"gopkg.in/alecthomas/kingpin.v2"
 
-	"github.com/crossplane/terraform-provider-gen/cmd/schema"
-	"github.com/crossplane/terraform-provider-gen/pkg/generator"
+	"github.com/crossplane-contrib/terraform-provider-gen/cmd/schema"
+	"github.com/crossplane-contrib/terraform-provider-gen/pkg/generator"
 	"github.com/crossplane/terraform-provider-runtime/pkg/client"
 )
 

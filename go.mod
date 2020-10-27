@@ -1,4 +1,4 @@
-module github.com/crossplane/terraform-provider-gen
+module github.com/crossplane-contrib/terraform-provider-gen
 
 go 1.13
 

@@ -7,7 +7,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/crossplane/terraform-provider-gen/pkg/template"
+	"github.com/crossplane-contrib/terraform-provider-gen/pkg/template"
 )
 
 func getFixture(path string) (string, error) {
