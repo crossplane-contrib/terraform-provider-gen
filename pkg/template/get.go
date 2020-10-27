@@ -1,7 +1,5 @@
 package template
 
-//go:generate sh -c "CGO_ENABLED=0 go run ../../hack/.packr/main.go $PWD"
-
 import (
 	"bytes"
 	"io"
@@ -19,7 +17,6 @@ type TemplateGetter interface {
 }
 
 type tplGetter struct {
-	//files packr.Box
 	basepath string
 }
 
