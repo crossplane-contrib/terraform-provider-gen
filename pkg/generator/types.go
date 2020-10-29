@@ -14,6 +14,7 @@ const (
 	FieldTypeAttribute
 )
 
+//go:generate go run golang.org/x/tools/cmd/stringer -type=AttributeType,FieldType -output=types_stringers.go
 const (
 	AttributeTypeUintptr AttributeType = iota
 	AttributeTypeUint8
@@ -115,9 +116,9 @@ func (mr *ManagedResource) WithNamer(n ResourceNamer) *ManagedResource {
 	return mr
 }
 
-func NewManagedResource(name, packageName string) *ManagedResource {
+func NewManagedResource(name, packagePath string) *ManagedResource {
 	return &ManagedResource{
 		Name:        name,
-		PackagePath: packageName,
+		PackagePath: packagePath,
 	}
 }

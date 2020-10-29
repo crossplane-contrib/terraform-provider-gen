@@ -6,7 +6,7 @@ import (
 	"gopkg.in/alecthomas/kingpin.v2"
 
 	"github.com/crossplane-contrib/terraform-provider-gen/cmd/schema"
-	"github.com/crossplane-contrib/terraform-provider-gen/pkg/generator"
+	"github.com/crossplane-contrib/terraform-provider-gen/pkg/integration"
 	"github.com/crossplane-contrib/terraform-runtime/pkg/client"
 )
 
@@ -49,7 +49,7 @@ func run() error {
 		}
 		err = schema.GenerateSchema(onlyGenerateResourceFlag, provider)
 	case updateFixturesCmd.FullCommand():
-		err := generator.UpdateAllFixtures(*repositoryRoot)
+		err := integration.UpdateAllFixtures(*repositoryRoot)
 		if err != nil {
 			return err
 		}

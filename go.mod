@@ -5,9 +5,10 @@ go 1.13
 replace github.com/crossplane-contrib/terraform-runtime => /Users/kasey/src/crossplane/terraform-provider-runtime
 
 require (
-	github.com/crossplane/terraform-provider-runtime v0.0.0-00010101000000-000000000000
+	github.com/crossplane-contrib/terraform-runtime v0.0.0-00010101000000-000000000000
 	github.com/dave/jennifer v1.3.0
 	github.com/hashicorp/terraform v0.13.5
+	github.com/iancoleman/strcase v0.1.2
 	github.com/pkg/errors v0.9.1
 	github.com/zclconf/go-cty v1.7.0
 	gopkg.in/alecthomas/kingpin.v2 v2.2.6

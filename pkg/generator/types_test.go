@@ -7,6 +7,72 @@ import (
 	j "github.com/dave/jennifer/jen"
 )
 
+const FakeResourceName string = "Test"
+const FakePackagePath string = "github.com/crossplane-contrib/fake"
+
+func DefaultTestResource() *ManagedResource {
+	return NewManagedResource(FakeResourceName, FakePackagePath).WithNamer(NewDefaultNamer(FakeResourceName))
+}
+
+func NestedFieldFixture(outerTypeName, nestedTypeName, deeplyNestedTypeName string) Field {
+	f := Field{
+		// "Name" is appended to help visually differentiate field and type names
+		Name: deeplyNestedTypeName + "Name",
+		Type: FieldTypeStruct,
+		StructField: StructField{
+			PackagePath: FakePackagePath,
+			TypeName:    deeplyNestedTypeName,
+		},
+		Fields: []Field{
+			{
+				Name:           "aString",
+				Type:           FieldTypeAttribute,
+				AttributeField: AttributeField{Type: AttributeTypeString},
+				Tag: &StructTag{
+					Json: &StructTagJson{
+						Name: "a_string",
+					},
+				},
+			},
+		},
+		Tag: &StructTag{
+			Json: &StructTagJson{
+				Name: "deeper_sub_field",
+			},
+		},
+	}
+	nf := Field{
+		// "Name" is appended to help visually differentiate field and type names
+		Name: nestedTypeName + "Name",
+		Type: FieldTypeStruct,
+		StructField: StructField{
+			PackagePath: FakePackagePath,
+			TypeName:    nestedTypeName,
+		},
+		Fields: []Field{
+			f,
+		},
+		Tag: &StructTag{
+			Json: &StructTagJson{
+				Name: "sub_field",
+			},
+		},
+	}
+	test := Field{
+		// "Name" is appended to help visually differentiate field and type names
+		Name: outerTypeName + "Name",
+		Type: FieldTypeStruct,
+		StructField: StructField{
+			PackagePath: FakePackagePath,
+			TypeName:    outerTypeName,
+		},
+		Fields: []Field{
+			nf,
+		},
+	}
+	return test
+}
+
 func expectValidationError(expectedErr, actualErr error, t *testing.T) {
 	if actualErr != nil {
 		me, ok := actualErr.(MultiError)
@@ -53,7 +119,7 @@ func TestBaseWithValidation(t *testing.T) {
 }
 
 func TestDefaultIsValid(t *testing.T) {
-	mr := defaultTestResource()
+	mr := DefaultTestResource()
 	err := mr.Validate()
 	if err != nil {
 		t.Errorf("Unexpected error from ManagedResource.Validate(): %v", err)
@@ -61,7 +127,7 @@ func TestDefaultIsValid(t *testing.T) {
 }
 
 func TestResourceList(t *testing.T) {
-	mr := defaultTestResource()
+	mr := DefaultTestResource()
 	expected := "// +kubebuilder:object:root=true\n" +
 		"\n" +
 		"// Test contains a list of TestList\n" +
@@ -77,7 +143,7 @@ func TestResourceList(t *testing.T) {
 }
 
 func TestSpec(t *testing.T) {
-	mr := defaultTestResource()
+	mr := DefaultTestResource()
 	expected := "// A TestSpec defines the desired state of a Test\n" +
 		"type TestSpec struct {\n" +
 		"	runtimev1alpha1.ResourceSpec `json:\",inline\"`\n" +
@@ -90,7 +156,7 @@ func TestSpec(t *testing.T) {
 }
 
 func TestStatus(t *testing.T) {
-	mr := defaultTestResource()
+	mr := DefaultTestResource()
 	expected := "// A TestStatus defines the observed state of a Test\n" +
 		"type TestStatus struct {\n" +
 		"	runtimev1alpha1.ResourceStatus `json:\",inline\"`\n" +
@@ -106,7 +172,7 @@ func TestAttributeStatementStruct(t *testing.T) {
 	parent := Field{
 		Type: FieldTypeStruct,
 		StructField: StructField{
-			PackagePath: fakePackagePath,
+			PackagePath: FakePackagePath,
 		},
 	}
 	// TODO: should we even allow this in our managed resource types?
@@ -115,7 +181,7 @@ func TestAttributeStatementStruct(t *testing.T) {
 		Name: "Fieldname",
 		Type: FieldTypeStruct,
 		StructField: StructField{
-			PackagePath: fakePackagePath,
+			PackagePath: FakePackagePath,
 			TypeName:    "TypeName",
 		},
 	}
@@ -194,8 +260,8 @@ func TestAttributeStatementPrimitives(t *testing.T) {
 	test := Field{
 		Type: FieldTypeStruct,
 		StructField: StructField{
-			PackagePath: fakePackagePath,
-			TypeName:    fakeResourceName,
+			PackagePath: FakePackagePath,
+			TypeName:    FakeResourceName,
 		},
 		Fields: []Field{
 			ezAttrField("a", AttributeTypeUintptr),
@@ -258,8 +324,8 @@ func testTag(t *testing.T, tagJson *StructTagJson, expected string) error {
 	test := Field{
 		Type: FieldTypeStruct,
 		StructField: StructField{
-			PackagePath: fakePackagePath,
-			TypeName:    fakeResourceName,
+			PackagePath: FakePackagePath,
+			TypeName:    FakeResourceName,
 		},
 		Fields: []Field{
 			ezAttrField("a", AttributeTypeUintptr, withFieldTag(tag)),
@@ -339,8 +405,8 @@ func testStructFieldTag(t *testing.T, field Field, expected string) error {
 	test := Field{
 		Type: FieldTypeStruct,
 		StructField: StructField{
-			PackagePath: fakePackagePath,
-			TypeName:    fakeResourceName,
+			PackagePath: FakePackagePath,
+			TypeName:    FakeResourceName,
 		},
 		Fields: []Field{
 			field,
@@ -359,7 +425,7 @@ func TestStructFieldTag(t *testing.T) {
 		Name: "SubField",
 		Type: FieldTypeStruct,
 		StructField: StructField{
-			PackagePath: fakePackagePath,
+			PackagePath: FakePackagePath,
 			TypeName:    "AnotherName",
 		},
 		Tag: &StructTag{
@@ -387,7 +453,7 @@ func TestStructFieldTag(t *testing.T) {
 func TestFieldFragmentsNested(t *testing.T) {
 	deeplyNestedTypeName := "DeeplyNestedField"
 	nestedTypeName := "NestedField"
-	test := nestedFieldFixture(fakeResourceName, nestedTypeName, deeplyNestedTypeName)
+	test := NestedFieldFixture(FakeResourceName, nestedTypeName, deeplyNestedTypeName)
 	frags := FieldFragments(test)
 	if len(frags) != 3 {
 		t.Errorf("Expected %d results from FieldFragments, saw %d", 3, len(frags))
