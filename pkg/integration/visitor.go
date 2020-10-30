@@ -1,7 +1,8 @@
-package generator
+package integration
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/hashicorp/terraform/configs/configschema"
 )
@@ -66,32 +67,22 @@ func UnrollBlocks(block *configschema.Block, indent string) {
 	}
 }
 
-type visitor func(string, []*configschema.NestedBlock)
+type visitor func([]string, []*configschema.NestedBlock)
 
 func VisitAllBlocks(v visitor, name string, block configschema.Block) {
-	fmt.Printf("resource=%s\n", name)
 	nb := configschema.NestedBlock{
 		Block:   block,
 		Nesting: configschema.NestingSingle,
 	}
-	VisitBlock(v, name, []*configschema.NestedBlock{&nb})
+	VisitBlock(v, []string{name}, []*configschema.NestedBlock{&nb})
 }
 
-func VisitBlock(v visitor, name string, blocks []*configschema.NestedBlock) {
+func VisitBlock(v visitor, names []string, blocks []*configschema.NestedBlock) {
 	block := blocks[len(blocks)-1]
 	for n, b := range block.BlockTypes {
-		v(n, append(blocks, b))
-		VisitBlock(v, n, append(blocks, b))
+		v(append(names, n), append(blocks, b))
+		VisitBlock(v, append(names, n), append(blocks, b))
 	}
-}
-
-func NestingModePrinter(name string, blocks []*configschema.NestedBlock) {
-	b := blocks[len(blocks)-1]
-	fmt.Printf("%s%s: %s (%d, %d)", tabs(len(blocks)), name, nestingModeString(b.Nesting), b.MinItems, b.MaxItems)
-	if b.Deprecated {
-		fmt.Print(" (DEPRECATED)")
-	}
-	fmt.Print("\n")
 }
 
 func tabs(n int) string {
@@ -152,3 +143,50 @@ func nestingModeString(nm configschema.NestingMode) string {
 		return "invalid"
 	}
 }
+
+type UniqueNestingMode struct {
+	Mode     string
+	MinItems int
+	MaxItems int
+}
+
+type UniqueNestingModeMap map[UniqueNestingMode][]string
+
+func (unmm UniqueNestingModeMap) visitor(names []string, blocks []*configschema.NestedBlock) {
+	b := blocks[len(blocks)-1]
+	np := namePath(names)
+	unm := UniqueNestingMode{
+		Mode:     nestingModeString(b.Nesting),
+		MinItems: b.MinItems,
+		MaxItems: b.MaxItems,
+	}
+	l, ok := unmm[unm]
+	if !ok {
+		l = make([]string, 0)
+	}
+	unmm[unm] = append(l, np)
+}
+
+func namePath(names []string) string {
+	return strings.Join(names, ".")
+}
+
+func NestingModePrinter(names []string, blocks []*configschema.NestedBlock) {
+	b := blocks[len(blocks)-1]
+	//fmt.Printf("%s%s: %s (%d, %d)", tabs(len(blocks)), names[len(names)-1], nestingModeString(b.Nesting), b.MinItems, b.MaxItems)
+	fmt.Printf("%s: %s (%d, %d)", namePath(names), nestingModeString(b.Nesting), b.MinItems, b.MaxItems)
+	if b.Deprecated {
+		fmt.Print(" (DEPRECATED)")
+	}
+	fmt.Print("\n")
+}
+
+func MultiVisitor(vs ...visitor) visitor {
+	return func(names []string, blocks []*configschema.NestedBlock) {
+		for _, v := range vs {
+			v(names, blocks)
+		}
+	}
+}
+
+var _ visitor = NestingModePrinter
