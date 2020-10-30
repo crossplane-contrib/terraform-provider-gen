@@ -4,6 +4,7 @@ import (
 	"github.com/crossplane-contrib/terraform-provider-gen/pkg/generator"
 	"github.com/hashicorp/terraform/configs/configschema"
 	"github.com/hashicorp/terraform/providers"
+	"github.com/iancoleman/strcase"
 )
 
 type SpecOrStatusField int
@@ -17,9 +18,14 @@ const (
 // to a crossplane generator.Field
 func AttributeToField(name string, tfAttr *configschema.Attribute) generator.Field {
 	return generator.Field{
-		Name:           name,
+		Name:           strcase.ToCamel(name),
 		Type:           generator.FieldTypeAttribute,
 		AttributeField: generator.AttributeField{Type: generator.AttributeTypeString},
+		Tag: &generator.StructTag{
+			&generator.StructTagJson{
+				Name: name,
+			},
+		},
 	}
 }
 

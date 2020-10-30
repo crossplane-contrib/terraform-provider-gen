@@ -96,12 +96,11 @@ func TestSpecStatusAttributeFields(t *testing.T) {
 }
 
 func TestSchemaToManagedResourceRender(t *testing.T) {
-	terraform_resource_name := "aws_test_resource"
+	resourceName := "TestResource"
 	// TODO: write some package naming stuff -- maybe start with a flat package name scheme
 	packagePath := "github.com/crossplane/provider-terraform-aws/generated/test/v1alpha1"
-	renamer := NewTerraformResourceRenamer("aws")
 	s := testFixtureFlatBlock()
-	mr := SchemaToManagedResource(renamer(terraform_resource_name), packagePath, s)
+	mr := SchemaToManagedResource(resourceName, packagePath, s)
 	if mr.Name != mr.Namer().TypeName() {
 		t.Errorf("expected ManagedResource.Name=%s, actual=%s", mr.Namer().TypeName(), mr.Name)
 	}

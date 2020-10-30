@@ -1,4 +1,4 @@
-package translate
+package provider
 
 import "testing"
 
@@ -6,14 +6,14 @@ func TestTerraformTypeRenamer(t *testing.T) {
 	tfName := "aws_resource"
 	expected := "Resource"
 	prefix := "aws_"
-	r := NewTerraformResourceRenamer(prefix)
-	actual := r(tfName)
+	r := NewTerraformResourceNamer(prefix, tfName)
+	actual := r.ManagedResourceName()
 	if actual != expected {
 		t.Errorf("Unexpected renaming of '%s' to '%s' using NewTerraformResourceRenamer('%s'). expected=%s", tfName, actual, prefix, expected)
 	}
 	prefix = "aws"
-	r = NewTerraformResourceRenamer(prefix)
-	actual = r(tfName)
+	r = NewTerraformResourceNamer(prefix, tfName)
+	actual = r.ManagedResourceName()
 	if actual != expected {
 		t.Errorf("Unexpected renaming of '%s' to '%s' using NewTerraformResourceRenamer('%s'). expected=%s", tfName, actual, prefix, expected)
 	}
@@ -21,8 +21,8 @@ func TestTerraformTypeRenamer(t *testing.T) {
 	tfName = "aws_longer_resource_name"
 	expected = "LongerResourceName"
 	prefix = "aws_"
-	r = NewTerraformResourceRenamer(prefix)
-	actual = r(tfName)
+	r = NewTerraformResourceNamer(prefix, tfName)
+	actual = r.ManagedResourceName()
 	if actual != expected {
 		t.Errorf("Unexpected renaming of '%s' to '%s' using NewTerraformResourceRenamer('%s'). expected=%s", tfName, actual, prefix, expected)
 	}

@@ -165,12 +165,11 @@ var FixtureGenerators map[string]fixtureGenerator = map[string]fixtureGenerator{
 		return renderer.Render()
 	},
 	TestSchemaToManagedResourceRender: func(tg template.TemplateGetter) (string, error) {
-		terraform_resource_name := "aws_test_resource"
+		resourceName := "TestResource"
 		// TODO: write some package naming stuff -- maybe start with a flat package name scheme
 		packagePath := "github.com/crossplane/provider-terraform-aws/generated/test/v1alpha1"
-		renamer := translate.NewTerraformResourceRenamer("aws")
 		s := testFixtureFlatBlock()
-		mr := translate.SchemaToManagedResource(renamer(terraform_resource_name), packagePath, s)
+		mr := translate.SchemaToManagedResource(resourceName, packagePath, s)
 		renderer := generator.NewManagedResourceTypeDefRenderer(mr, tg)
 		return renderer.Render()
 	},
