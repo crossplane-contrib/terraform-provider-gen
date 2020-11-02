@@ -127,7 +127,11 @@ func FieldFragments(f Field) []*Fragment {
 	attributes := make([]j.Code, 0)
 	nested := make([]*Fragment, 0)
 	for _, a := range f.Fields {
-		attributes = append(attributes, AttributeStatement(a, f))
+		attrStatement := AttributeStatement(a, f)
+		if attrStatement == nil {
+			continue
+		}
+		attributes = append(attributes, attrStatement)
 		if a.Type == FieldTypeStruct {
 			for _, frag := range FieldFragments(a) {
 				nested = append(nested, frag)
@@ -150,6 +154,10 @@ func AttributeStatement(f, parent Field) *j.Statement {
 	switch f.Type {
 	case FieldTypeAttribute:
 		id = TypeStatement(f, id)
+		if id == nil {
+			fmt.Printf("skipping: name=%s\n", f.Name)
+			return nil
+		}
 	case FieldTypeStruct:
 		// TODO: since you can have an embedded struct, we need to allow
 		// the name to be excluded, and since we can have relative packages
@@ -224,7 +232,7 @@ func TypeStatement(f Field, s *j.Statement) *j.Statement {
 		return s.Bool()
 	}
 
-	panic(fmt.Sprintf("Unable to determine type for %s", f.Name))
+	return nil
 }
 
 type managedResourceTypeDefRenderer struct {

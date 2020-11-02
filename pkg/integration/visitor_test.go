@@ -15,5 +15,11 @@ func TestNestingModeAggregator(t *testing.T) {
 	name := "aws_kinesis_analytics_application"
 	block := rt[name].Block
 	unmm := make(UniqueNestingModeMap)
-	VisitAllBlocks(unmm.visitor, name, *block)
+	VisitAllBlocks(unmm.Visitor, name, *block)
+	if len(unmm) != 4 {
+		t.Errorf("Expected a single entry in UniqueNestingModeMap, found =%d", len(unmm))
+	}
+	for unq, name := range unmm {
+		t.Logf("%v : %v", unq, name)
+	}
 }

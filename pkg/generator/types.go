@@ -16,7 +16,8 @@ const (
 
 //go:generate go run golang.org/x/tools/cmd/stringer -type=AttributeType,FieldType -output=types_stringers.go
 const (
-	AttributeTypeUintptr AttributeType = iota
+	AttributeTypeUnsupported AttributeType = iota
+	AttributeTypeUintptr
 	AttributeTypeUint8
 	AttributeTypeUint64
 	AttributeTypeUint32

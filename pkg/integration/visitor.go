@@ -79,8 +79,8 @@ func VisitAllBlocks(v visitor, name string, block configschema.Block) {
 
 func VisitBlock(v visitor, names []string, blocks []*configschema.NestedBlock) {
 	block := blocks[len(blocks)-1]
+	v(names, blocks)
 	for n, b := range block.BlockTypes {
-		v(append(names, n), append(blocks, b))
 		VisitBlock(v, append(names, n), append(blocks, b))
 	}
 }
@@ -152,7 +152,7 @@ type UniqueNestingMode struct {
 
 type UniqueNestingModeMap map[UniqueNestingMode][]string
 
-func (unmm UniqueNestingModeMap) visitor(names []string, blocks []*configschema.NestedBlock) {
+func (unmm UniqueNestingModeMap) Visitor(names []string, blocks []*configschema.NestedBlock) {
 	b := blocks[len(blocks)-1]
 	np := namePath(names)
 	unm := UniqueNestingMode{
@@ -186,6 +186,18 @@ func MultiVisitor(vs ...visitor) visitor {
 		for _, v := range vs {
 			v(names, blocks)
 		}
+	}
+}
+
+type FlatResourceFinder []string
+
+func (frf *FlatResourceFinder) Visitor(names []string, blocks []*configschema.NestedBlock) {
+	if len(blocks) > 1 {
+		return
+	}
+	b := blocks[0]
+	if len(b.BlockTypes) == 0 {
+		*frf = append(*frf, names[0])
 	}
 }
 

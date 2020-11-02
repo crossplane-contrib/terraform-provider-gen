@@ -27,7 +27,7 @@ func (pt *PackageTranslator) WriteTypeDefFile() error {
 	if err != nil {
 		return err
 	}
-	fh, err := os.OpenFile(pt.typesPath(), os.O_RDWR|os.O_CREATE, 0755)
+	fh, err := os.OpenFile(pt.typesPath(), os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0755)
 	defer fh.Close()
 	if err != nil {
 		return err

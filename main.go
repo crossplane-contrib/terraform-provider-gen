@@ -1,11 +1,12 @@
 package main
 
 import (
+	"fmt"
 	"os"
+	"sort"
 
 	"gopkg.in/alecthomas/kingpin.v2"
 
-	"github.com/crossplane-contrib/terraform-provider-gen/pkg/generator"
 	"github.com/crossplane-contrib/terraform-provider-gen/pkg/integration"
 	"github.com/crossplane-contrib/terraform-provider-gen/pkg/provider"
 	"github.com/crossplane-contrib/terraform-provider-gen/pkg/template"
@@ -29,8 +30,10 @@ var (
 	baseCrdVersion           = generateSchemaCmd.Flag("crd-version", "Base kind version for generated kubernete kinds, eg v1alpha1").Default("v1alpha1").String()
 	repoRoot                 = generateSchemaCmd.Flag("repo-root", "path to the root of the terraform-provider-gen so the binary can find templates (defaults to PWD)").String()
 
-	analyzeCmd = gen.Command("analyze", "perform analysis on a provider's schemas")
-	nestingCmd = analyzeCmd.Command("nesting", "report on the different nesting paths and modes observed in a provider")
+	analyzeCmd      = gen.Command("analyze", "perform analysis on a provider's schemas")
+	nestingCmd      = analyzeCmd.Command("nesting", "report on the different nesting paths and modes observed in a provider")
+	nestingCmdStyle = nestingCmd.Flag("report-style", "Choose between summary (organized by nesting type and min/max), or dump (showing all nested values for all resources)").Default("dump").String()
+	flatCmd         = analyzeCmd.Command("flat", "Find resources that do not use nesting at all")
 
 	//renderCmd = schemaCmd.Command("render", "render crossplane types for the given provider.")
 	//dumpSchemaCmd = schemaCmd.Command("dump", "Print schema to stdout.")
@@ -77,8 +80,40 @@ func run() error {
 		if err != nil {
 			return err
 		}
+		unmm := make(integration.UniqueNestingModeMap)
 		for name, s := range p.GetSchema().ResourceTypes {
-			generator.VisitAllBlocks(generator.NestingModePrinter, name, *s.Block)
+			integration.VisitAllBlocks(unmm.Visitor, name, *s.Block)
+		}
+		switch *nestingCmdStyle {
+		case "dump":
+			inverted := make(map[string]integration.UniqueNestingMode)
+			keys := make([]string, 0)
+			for mode, paths := range unmm {
+				for _, p := range paths {
+					inverted[p] = mode
+					keys = append(keys, p)
+				}
+			}
+			sort.Strings(keys)
+			for _, k := range keys {
+				b := inverted[k]
+				fmt.Printf("%s: %s (%d, %d)\n", k, b.Mode, b.MinItems, b.MaxItems)
+			}
+		default:
+			return fmt.Errorf("report-style=%s not recognized", nestingCmdStyle)
+		}
+	case flatCmd.FullCommand():
+		p, err := client.NewGRPCProvider(*providerName, *pluginPath)
+		if err != nil {
+			return err
+		}
+		frf := make(integration.FlatResourceFinder, 0)
+		for name, s := range p.GetSchema().ResourceTypes {
+			integration.VisitAllBlocks(frf.Visitor, name, *s.Block)
+		}
+		sort.Strings(frf)
+		for _, r := range frf {
+			fmt.Println(r)
 		}
 	}
 

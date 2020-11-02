@@ -8,30 +8,31 @@ func _() {
 	// An "invalid array index" compiler error signifies that the constant values have changed.
 	// Re-run the stringer command to generate them again.
 	var x [1]struct{}
-	_ = x[AttributeTypeUintptr-0]
-	_ = x[AttributeTypeUint8-1]
-	_ = x[AttributeTypeUint64-2]
-	_ = x[AttributeTypeUint32-3]
-	_ = x[AttributeTypeUint16-4]
-	_ = x[AttributeTypeUint-5]
-	_ = x[AttributeTypeString-6]
-	_ = x[AttributeTypeRune-7]
-	_ = x[AttributeTypeInt8-8]
-	_ = x[AttributeTypeInt64-9]
-	_ = x[AttributeTypeInt32-10]
-	_ = x[AttributeTypeInt16-11]
-	_ = x[AttributeTypeInt-12]
-	_ = x[AttributeTypeFloat64-13]
-	_ = x[AttributeTypeFloat32-14]
-	_ = x[AttributeTypeComplex64-15]
-	_ = x[AttributeTypeComplex128-16]
-	_ = x[AttributeTypeByte-17]
-	_ = x[AttributeTypeBool-18]
+	_ = x[AttributeTypeUnsupported-0]
+	_ = x[AttributeTypeUintptr-1]
+	_ = x[AttributeTypeUint8-2]
+	_ = x[AttributeTypeUint64-3]
+	_ = x[AttributeTypeUint32-4]
+	_ = x[AttributeTypeUint16-5]
+	_ = x[AttributeTypeUint-6]
+	_ = x[AttributeTypeString-7]
+	_ = x[AttributeTypeRune-8]
+	_ = x[AttributeTypeInt8-9]
+	_ = x[AttributeTypeInt64-10]
+	_ = x[AttributeTypeInt32-11]
+	_ = x[AttributeTypeInt16-12]
+	_ = x[AttributeTypeInt-13]
+	_ = x[AttributeTypeFloat64-14]
+	_ = x[AttributeTypeFloat32-15]
+	_ = x[AttributeTypeComplex64-16]
+	_ = x[AttributeTypeComplex128-17]
+	_ = x[AttributeTypeByte-18]
+	_ = x[AttributeTypeBool-19]
 }
 
-const _AttributeType_name = "AttributeTypeUintptrAttributeTypeUint8AttributeTypeUint64AttributeTypeUint32AttributeTypeUint16AttributeTypeUintAttributeTypeStringAttributeTypeRuneAttributeTypeInt8AttributeTypeInt64AttributeTypeInt32AttributeTypeInt16AttributeTypeIntAttributeTypeFloat64AttributeTypeFloat32AttributeTypeComplex64AttributeTypeComplex128AttributeTypeByteAttributeTypeBool"
+const _AttributeType_name = "AttributeTypeUnsupportedAttributeTypeUintptrAttributeTypeUint8AttributeTypeUint64AttributeTypeUint32AttributeTypeUint16AttributeTypeUintAttributeTypeStringAttributeTypeRuneAttributeTypeInt8AttributeTypeInt64AttributeTypeInt32AttributeTypeInt16AttributeTypeIntAttributeTypeFloat64AttributeTypeFloat32AttributeTypeComplex64AttributeTypeComplex128AttributeTypeByteAttributeTypeBool"
 
-var _AttributeType_index = [...]uint16{0, 20, 38, 57, 76, 95, 112, 131, 148, 165, 183, 201, 219, 235, 255, 275, 297, 320, 337, 354}
+var _AttributeType_index = [...]uint16{0, 24, 44, 62, 81, 100, 119, 136, 155, 172, 189, 207, 225, 243, 259, 279, 299, 321, 344, 361, 378}
 
 func (i AttributeType) String() string {
 	if i < 0 || i >= AttributeType(len(_AttributeType_index)-1) {

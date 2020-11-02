@@ -1,6 +1,8 @@
 package translate
 
 import (
+	"fmt"
+
 	"github.com/crossplane-contrib/terraform-provider-gen/pkg/generator"
 	"github.com/hashicorp/terraform/configs/configschema"
 	"github.com/hashicorp/terraform/providers"
@@ -14,19 +16,74 @@ const (
 	AtProviderField
 )
 
+func FieldTypeForAttribute(tfAttr *configschema.Attribute) generator.AttributeType {
+	switch tfAttr.Type.FriendlyName() {
+	case "string": // TODO: figure out how to support "string"
+		return generator.AttributeTypeString
+	case "number": // TODO: figure out how to support "number"
+		return generator.AttributeTypeInt
+	case "bool": // TODO: figure out how to support "bool"
+		return generator.AttributeTypeBool
+	case "map of string": // TODO: figure out how to support "map of string"
+		return generator.AttributeTypeUnsupported
+	case "set of string": // TODO: figure out how to support "set of string"
+		return generator.AttributeTypeUnsupported
+	case "set of object": // TODO: figure out how to support "set of object"
+		return generator.AttributeTypeUnsupported
+	case "list of object": // TODO: figure out how to support "list of object"
+		return generator.AttributeTypeUnsupported
+	case "list of string": // TODO: figure out how to support "list of string"
+		return generator.AttributeTypeUnsupported
+	case "map of bool": // TODO: figure out how to support "map of bool"
+		return generator.AttributeTypeUnsupported
+	case "set of map of string": // TODO: oh... oh no
+		return generator.AttributeTypeUnsupported
+	}
+	return generator.AttributeTypeUnsupported
+}
+
 // AttributeToField converts a terraform *configschema.Attribute
 // to a crossplane generator.Field
 func AttributeToField(name string, tfAttr *configschema.Attribute) generator.Field {
-	return generator.Field{
+	f := generator.Field{
 		Name:           strcase.ToCamel(name),
 		Type:           generator.FieldTypeAttribute,
-		AttributeField: generator.AttributeField{Type: generator.AttributeTypeString},
+		AttributeField: generator.AttributeField{},
 		Tag: &generator.StructTag{
 			&generator.StructTagJson{
 				Name: name,
 			},
 		},
 	}
+	switch tfAttr.Type.FriendlyName() {
+	case "string":
+		f.AttributeField.Type = generator.AttributeTypeString
+	case "number":
+		f.AttributeField.Type = generator.AttributeTypeInt
+	case "bool":
+		f.AttributeField.Type = generator.AttributeTypeBool
+	case "map of string": // TODO: figure out how to support "map of string"
+		f.AttributeField.Type = generator.AttributeTypeUnsupported
+	case "set of string": // TODO: figure out how to support "set of string"
+		f.AttributeField.Type = generator.AttributeTypeString
+		f.IsSlice = true
+		fmt.Printf("saw a []string! name=%s/%s\n", name, f.Name)
+	case "set of object": // TODO: figure out how to support "set of object"
+		f.AttributeField.Type = generator.AttributeTypeUnsupported
+	case "list of object": // TODO: figure out how to support "list of object"
+		f.AttributeField.Type = generator.AttributeTypeUnsupported
+	case "list of string": // TODO: figure out how to support "list of string"
+		f.AttributeField.Type = generator.AttributeTypeString
+		f.IsSlice = true
+		fmt.Printf("saw a []string (set)! name=%s/%s\n", name, f.Name)
+	case "map of bool": // TODO: figure out how to support "map of bool"
+		f.AttributeField.Type = generator.AttributeTypeUnsupported
+	case "set of map of string": // TODO: oh... oh no
+		f.AttributeField.Type = generator.AttributeTypeUnsupported
+	default:
+		f.AttributeField.Type = generator.AttributeTypeUnsupported
+	}
+	return f
 }
 
 func SpecOrStatus(attr *configschema.Attribute) SpecOrStatusField {
