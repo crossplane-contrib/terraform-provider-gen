@@ -6,7 +6,7 @@ import (
 	"path"
 
 	"github.com/crossplane-contrib/terraform-provider-gen/pkg/generator"
-	"github.com/crossplane-contrib/terraform-provider-gen/pkg/template"
+	"github.com/crossplane-contrib/terraform-provider-gen/pkg/provider"
 	"github.com/crossplane-contrib/terraform-provider-gen/pkg/translate"
 	"github.com/hashicorp/terraform/configs/configschema"
 	"github.com/hashicorp/terraform/providers"
@@ -128,23 +128,32 @@ func testFixtureFlatBlock() providers.Schema {
 	return s
 }
 
-type fixtureGenerator func(template.TemplateGetter) (string, error)
+type fixtureGenerator func(*IntegrationTestConfig) (string, error)
 
 var (
 	TestManagedResourceTypeDefRendererPath = "testdata/test-render-types-file.go"
 	TestRenderNestedStatusPath             = "testdata/test-render-nested-status.go"
 	TestRenderNestedSpecPath               = "testdata/test-render-nested-spec.go"
 	TestSchemaToManagedResourceRender      = "testdata/test-schema-to-managed-resource-render.go"
+	TestProviderBinarySchemaS3Path         = "testdata/test-provider-binary-schema-s3.go"
 )
 
 var FixtureGenerators map[string]fixtureGenerator = map[string]fixtureGenerator{
-	TestManagedResourceTypeDefRendererPath: func(tg template.TemplateGetter) (string, error) {
+	TestManagedResourceTypeDefRendererPath: func(itc *IntegrationTestConfig) (string, error) {
+		tg, err := itc.TemplateGetter()
+		if err != nil {
+			return "", err
+		}
 		mr := DefaultTestResource()
 		renderer := generator.NewManagedResourceTypeDefRenderer(mr, tg)
 		result, err := renderer.Render()
 		return result, err
 	},
-	TestRenderNestedStatusPath: func(tg template.TemplateGetter) (string, error) {
+	TestRenderNestedStatusPath: func(itc *IntegrationTestConfig) (string, error) {
+		tg, err := itc.TemplateGetter()
+		if err != nil {
+			return "", err
+		}
 		mr := DefaultTestResource()
 		// TODO: wonky thing that we have to do to satisfy matching package names to exclude
 		// the qualifier. Might want to add generator.FakePackagePath as an arg to the fixture instead
@@ -154,7 +163,11 @@ var FixtureGenerators map[string]fixtureGenerator = map[string]fixtureGenerator{
 		renderer := generator.NewManagedResourceTypeDefRenderer(mr, tg)
 		return renderer.Render()
 	},
-	TestRenderNestedSpecPath: func(tg template.TemplateGetter) (string, error) {
+	TestRenderNestedSpecPath: func(itc *IntegrationTestConfig) (string, error) {
+		tg, err := itc.TemplateGetter()
+		if err != nil {
+			return "", err
+		}
 		mr := DefaultTestResource()
 		// TODO: wonky thing that we have to do to satisfy matching package names to exclude
 		// the qualifier. Might want to add generator.FakePackagePath as an arg to the fixture instead
@@ -164,7 +177,11 @@ var FixtureGenerators map[string]fixtureGenerator = map[string]fixtureGenerator{
 		renderer := generator.NewManagedResourceTypeDefRenderer(mr, tg)
 		return renderer.Render()
 	},
-	TestSchemaToManagedResourceRender: func(tg template.TemplateGetter) (string, error) {
+	TestSchemaToManagedResourceRender: func(itc *IntegrationTestConfig) (string, error) {
+		tg, err := itc.TemplateGetter()
+		if err != nil {
+			return "", err
+		}
 		resourceName := "TestResource"
 		// TODO: write some package naming stuff -- maybe start with a flat package name scheme
 		packagePath := "github.com/crossplane/provider-terraform-aws/generated/test/v1alpha1"
@@ -173,19 +190,46 @@ var FixtureGenerators map[string]fixtureGenerator = map[string]fixtureGenerator{
 		renderer := generator.NewManagedResourceTypeDefRenderer(mr, tg)
 		return renderer.Render()
 	},
+	TestProviderBinarySchemaS3Path: func(itc *IntegrationTestConfig) (string, error) {
+		tg, err := itc.TemplateGetter()
+		if err != nil {
+			return "", err
+		}
+		packagePath := "github.com/crossplane/provider-terraform-aws/generated/test/v1alpha1"
+		typeName := "aws_s3_bucket"
+		c, err := getProvider(itc)
+		if err != nil {
+			return "", err
+		}
+		providerName, err := itc.ProviderName()
+		if err != nil {
+			return "", err
+		}
+		namer := provider.NewTerraformResourceNamer(providerName, typeName)
+		bucketResource := c.GetSchema().ResourceTypes[typeName]
+		mr := translate.SchemaToManagedResource(namer.PackageName(), packagePath, bucketResource)
+		renderer := generator.NewManagedResourceTypeDefRenderer(mr, tg)
+		return renderer.Render()
+	},
 }
 
-func UpdateAllFixtures(basepath string) error {
-	tg := template.NewTemplateGetter(basepath)
+func UpdateAllFixtures(itc *IntegrationTestConfig) error {
+	basePath, err := itc.RepoRoot()
+	if err != nil {
+		return err
+	}
 	for fxpath, f := range FixtureGenerators {
-		contents, err := f(tg)
-		p := path.Join(basepath, "pkg/integration", fxpath)
-		f, err := os.OpenFile(p, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0755)
+		contents, err := f(itc)
 		if err != nil {
 			return err
 		}
-		_, err = io.WriteString(f, contents)
-		f.Close()
+		p := path.Join(basePath, "pkg/integration", fxpath)
+		fp, err := os.OpenFile(p, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0755)
+		if err != nil {
+			return err
+		}
+		_, err = io.WriteString(fp, contents)
+		fp.Close()
 		if err != nil {
 			return err
 		}

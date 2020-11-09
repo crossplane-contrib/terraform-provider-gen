@@ -52,11 +52,9 @@ type TestResourceSpec struct {
 
 // A TestResourceParameters defines the desired state of a TestResource
 type TestResourceParameters struct {
-	different_resource_ref_id string
-	perform_optional_action   string
-	labels                    string
-	number_list               string
-	required_name             string
+	RequiredName           string `json:"required_name"`
+	DifferentResourceRefId string `json:"different_resource_ref_id"`
+	PerformOptionalAction  bool   `json:"perform_optional_action"`
 }
 
 // A TestResourceStatus defines the observed state of a TestResource
@@ -67,5 +65,5 @@ type TestResourceStatus struct {
 
 // A TestResourceObservation records the observed state of a TestResource
 type TestResourceObservation struct {
-	computed_owner_id string
+	ComputedOwnerId string `json:"computed_owner_id"`
 }

@@ -1,8 +1,6 @@
 package translate
 
 import (
-	"fmt"
-
 	"github.com/crossplane-contrib/terraform-provider-gen/pkg/generator"
 	"github.com/hashicorp/terraform/configs/configschema"
 	"github.com/hashicorp/terraform/providers"
@@ -15,32 +13,6 @@ const (
 	ForProviderField SpecOrStatusField = iota
 	AtProviderField
 )
-
-func FieldTypeForAttribute(tfAttr *configschema.Attribute) generator.AttributeType {
-	switch tfAttr.Type.FriendlyName() {
-	case "string": // TODO: figure out how to support "string"
-		return generator.AttributeTypeString
-	case "number": // TODO: figure out how to support "number"
-		return generator.AttributeTypeInt
-	case "bool": // TODO: figure out how to support "bool"
-		return generator.AttributeTypeBool
-	case "map of string": // TODO: figure out how to support "map of string"
-		return generator.AttributeTypeUnsupported
-	case "set of string": // TODO: figure out how to support "set of string"
-		return generator.AttributeTypeUnsupported
-	case "set of object": // TODO: figure out how to support "set of object"
-		return generator.AttributeTypeUnsupported
-	case "list of object": // TODO: figure out how to support "list of object"
-		return generator.AttributeTypeUnsupported
-	case "list of string": // TODO: figure out how to support "list of string"
-		return generator.AttributeTypeUnsupported
-	case "map of bool": // TODO: figure out how to support "map of bool"
-		return generator.AttributeTypeUnsupported
-	case "set of map of string": // TODO: oh... oh no
-		return generator.AttributeTypeUnsupported
-	}
-	return generator.AttributeTypeUnsupported
-}
 
 // AttributeToField converts a terraform *configschema.Attribute
 // to a crossplane generator.Field
@@ -67,7 +39,6 @@ func AttributeToField(name string, tfAttr *configschema.Attribute) generator.Fie
 	case "set of string": // TODO: figure out how to support "set of string"
 		f.AttributeField.Type = generator.AttributeTypeString
 		f.IsSlice = true
-		fmt.Printf("saw a []string! name=%s/%s\n", name, f.Name)
 	case "set of object": // TODO: figure out how to support "set of object"
 		f.AttributeField.Type = generator.AttributeTypeUnsupported
 	case "list of object": // TODO: figure out how to support "list of object"
@@ -75,7 +46,6 @@ func AttributeToField(name string, tfAttr *configschema.Attribute) generator.Fie
 	case "list of string": // TODO: figure out how to support "list of string"
 		f.AttributeField.Type = generator.AttributeTypeString
 		f.IsSlice = true
-		fmt.Printf("saw a []string (set)! name=%s/%s\n", name, f.Name)
 	case "map of bool": // TODO: figure out how to support "map of bool"
 		f.AttributeField.Type = generator.AttributeTypeUnsupported
 	case "set of map of string": // TODO: oh... oh no
@@ -111,8 +81,37 @@ func SpecOrStatusAttributeFields(attributes map[string]*configschema.Attribute) 
 	return forProvider, atProvider
 }
 
+func NestedBlockFields(blocks map[string]*configschema.NestedBlock, packagePath string) []generator.Field {
+	fields := make([]generator.Field, 0)
+	for name, block := range blocks {
+		f := generator.Field{
+			Name:   strcase.ToCamel(name),
+			Fields: make([]generator.Field, 0),
+			Type:   generator.FieldTypeStruct,
+			StructField: generator.StructField{
+				PackagePath: packagePath,
+				// TODO: the output would look nicer if we pluralized names when IsBlockList is true
+				TypeName: strcase.ToCamel(name),
+			},
+			Tag: &generator.StructTag{
+				&generator.StructTagJson{
+					Name: name,
+				},
+			},
+			Required: IsBlockRequired(block),
+			IsSlice:  IsBlockSlice(block),
+		}
+		for n, attr := range block.Attributes {
+			f.Fields = append(f.Fields, AttributeToField(n, attr))
+		}
+		f.Fields = append(f.Fields, NestedBlockFields(block.BlockTypes, packagePath)...)
+		fields = append(fields, f)
+	}
+	return fields
+}
+
 func SchemaToManagedResource(name, packagePath string, s providers.Schema) *generator.ManagedResource {
-	namer := generator.NewDefaultNamer(name)
+	namer := generator.NewDefaultNamer(strcase.ToCamel(name))
 	mr := generator.NewManagedResource(namer.TypeName(), packagePath).WithNamer(namer)
 	spec, status := SpecOrStatusAttributeFields(s.Block.Attributes)
 	mr.Parameters = generator.Field{
@@ -131,6 +130,10 @@ func SchemaToManagedResource(name, packagePath string, s providers.Schema) *gene
 		},
 		Fields: status,
 	}
+	nb := NestedBlockFields(s.Block.BlockTypes, packagePath)
+	if len(nb) > 0 {
+		mr.Parameters.Fields = append(mr.Parameters.Fields, nb...)
+	}
 	return mr
 }
 
@@ -144,4 +147,18 @@ func BlockToField(name, typeName string, tfBlock *configschema.Block, enclosingF
 		},
 	}
 	return f
+}
+
+func IsBlockRequired(nb *configschema.NestedBlock) bool {
+	if nb.MinItems > 0 {
+		return true
+	}
+	return false
+}
+
+func IsBlockSlice(nb *configschema.NestedBlock) bool {
+	if nb.MaxItems != 1 {
+		return true
+	}
+	return false
 }

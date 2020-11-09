@@ -5,6 +5,8 @@ import (
 	"strings"
 
 	"github.com/hashicorp/terraform/configs/configschema"
+
+	"github.com/crossplane-contrib/terraform-provider-gen/pkg/translate"
 )
 
 func UnrollBlocks(block *configschema.Block, indent string) {
@@ -145,9 +147,10 @@ func nestingModeString(nm configschema.NestingMode) string {
 }
 
 type UniqueNestingMode struct {
-	Mode     string
-	MinItems int
-	MaxItems int
+	Mode       string
+	MinItems   int
+	MaxItems   int
+	IsRequired bool
 }
 
 type UniqueNestingModeMap map[UniqueNestingMode][]string
@@ -156,9 +159,10 @@ func (unmm UniqueNestingModeMap) Visitor(names []string, blocks []*configschema.
 	b := blocks[len(blocks)-1]
 	np := namePath(names)
 	unm := UniqueNestingMode{
-		Mode:     nestingModeString(b.Nesting),
-		MinItems: b.MinItems,
-		MaxItems: b.MaxItems,
+		Mode:       nestingModeString(b.Nesting),
+		MinItems:   b.MinItems,
+		MaxItems:   b.MaxItems,
+		IsRequired: translate.IsBlockRequired(b),
 	}
 	l, ok := unmm[unm]
 	if !ok {

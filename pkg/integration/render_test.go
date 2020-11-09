@@ -6,8 +6,6 @@ import (
 	"io"
 	"os"
 	"testing"
-
-	"github.com/crossplane-contrib/terraform-provider-gen/pkg/template"
 )
 
 func getFixture(path string) (string, error) {
@@ -41,10 +39,15 @@ func TestRenderNestedSpec(t *testing.T) {
 	}
 }
 
+func TestProviderBinarySchemaS3(t *testing.T) {
+	if err := AssertConsistentFixture(TestProviderBinarySchemaS3Path); err != nil {
+		t.Error(err)
+	}
+}
+
 func AssertConsistentFixture(fixturePath string) error {
-	tg := template.NewTemplateGetter("../../")
 	fr := FixtureGenerators[fixturePath]
-	actual, err := fr(tg)
+	actual, err := fr(&IntegrationTestConfig{})
 	if err != nil {
 		return err
 	}

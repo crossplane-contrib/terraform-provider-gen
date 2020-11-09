@@ -57,7 +57,15 @@ func run() error {
 			return nil
 	*/
 	case updateFixturesCmd.FullCommand():
-		err := integration.UpdateAllFixtures(*repositoryRoot)
+		opts := []integration.TestConfigOption{
+			integration.WithPluginPath(*pluginPath),
+			integration.WithProvidername(*providerName),
+		}
+		if repositoryRoot != nil {
+			opts = append(opts, integration.WithRepoRoot(*repositoryRoot))
+		}
+		itc := integration.NewIntegrationTestConfig(opts...)
+		err := integration.UpdateAllFixtures(itc)
 		if err != nil {
 			return err
 		}
@@ -97,7 +105,7 @@ func run() error {
 			sort.Strings(keys)
 			for _, k := range keys {
 				b := inverted[k]
-				fmt.Printf("%s: %s (%d, %d)\n", k, b.Mode, b.MinItems, b.MaxItems)
+				fmt.Printf("%s: %s (%d, %d, %t)\n", k, b.Mode, b.MinItems, b.MaxItems, b.IsRequired)
 			}
 		default:
 			return fmt.Errorf("report-style=%s not recognized", nestingCmdStyle)
