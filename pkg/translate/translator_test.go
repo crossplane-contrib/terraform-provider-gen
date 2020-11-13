@@ -9,8 +9,8 @@ import (
 	"github.com/zclconf/go-cty/cty"
 )
 
-func testFixtureOptionalStringField() (string, *configschema.Attribute) {
-	return "optional_field", &configschema.Attribute{
+func testFixtureOptionalStringField() (string, string, *configschema.Attribute) {
+	return "optional_field", "OptionalField", &configschema.Attribute{
 		Required: false,
 		Optional: true,
 		Computed: false,
@@ -18,14 +18,14 @@ func testFixtureOptionalStringField() (string, *configschema.Attribute) {
 	}
 }
 
-func TestAttributeToField(t *testing.T) {
-	name, attr := testFixtureOptionalStringField()
-	f := AttributeToField(name, attr)
-	if f.Name != name {
-		t.Errorf("Wrong value from AttributeToField for Field.Name. expected=%s, actual=%s", name, f.Name)
+func TestTypeToField(t *testing.T) {
+	name, expectedName, attr := testFixtureOptionalStringField()
+	f := TypeToField(name, attr.Type)
+	if f.Name != expectedName {
+		t.Errorf("Wrong value from TypeToField for Field.Name. expected=%s, actual=%s", expectedName, f.Name)
 	}
 	if (f.Type != generator.FieldTypeAttribute && f.AttributeField != generator.AttributeField{}) {
-		t.Errorf("Expected AttributeToField to return an Attribute field, instead saw=%s", f.Type.String())
+		t.Errorf("Expected TypeToField to return an Attribute field, instead saw=%s", f.Type.String())
 	}
 	if f.AttributeField.Type != generator.AttributeTypeString {
 		t.Errorf("Expected attribute field to be a string type, instead saw =%s", f.AttributeField.Type.String())

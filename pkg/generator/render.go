@@ -230,6 +230,13 @@ func TypeStatement(f Field, s *j.Statement) *j.Statement {
 		return s.Byte()
 	case AttributeTypeBool:
 		return s.Bool()
+	case AttributeTypeMapStringKey:
+		switch f.AttributeField.MapValueType {
+		case AttributeTypeBool:
+			return s.Map(j.String()).Bool()
+		case AttributeTypeString:
+			return s.Map(j.String()).String()
+		}
 	}
 
 	return nil

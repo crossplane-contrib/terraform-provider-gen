@@ -69,9 +69,9 @@ func UnrollBlocks(block *configschema.Block, indent string) {
 	}
 }
 
-type visitor func([]string, []*configschema.NestedBlock)
+type Visitor func([]string, []*configschema.NestedBlock)
 
-func VisitAllBlocks(v visitor, name string, block configschema.Block) {
+func VisitAllBlocks(v Visitor, name string, block configschema.Block) {
 	nb := configschema.NestedBlock{
 		Block:   block,
 		Nesting: configschema.NestingSingle,
@@ -79,7 +79,7 @@ func VisitAllBlocks(v visitor, name string, block configschema.Block) {
 	VisitBlock(v, []string{name}, []*configschema.NestedBlock{&nb})
 }
 
-func VisitBlock(v visitor, names []string, blocks []*configschema.NestedBlock) {
+func VisitBlock(v Visitor, names []string, blocks []*configschema.NestedBlock) {
 	block := blocks[len(blocks)-1]
 	v(names, blocks)
 	for n, b := range block.BlockTypes {
@@ -185,7 +185,7 @@ func NestingModePrinter(names []string, blocks []*configschema.NestedBlock) {
 	fmt.Print("\n")
 }
 
-func MultiVisitor(vs ...visitor) visitor {
+func MultiVisitor(vs ...Visitor) Visitor {
 	return func(names []string, blocks []*configschema.NestedBlock) {
 		for _, v := range vs {
 			v(names, blocks)
@@ -205,4 +205,18 @@ func (frf *FlatResourceFinder) Visitor(names []string, blocks []*configschema.Ne
 	}
 }
 
-var _ visitor = NestingModePrinter
+var _ Visitor = NestingModePrinter
+
+type CtyTypeIndexer map[string][]string
+
+func (cti CtyTypeIndexer) Visitor(names []string, blocks []*configschema.NestedBlock) {
+	b := blocks[len(blocks)-1]
+	for name, attr := range b.Attributes {
+		t := attr.Type.FriendlyName()
+		_, exists := cti[t]
+		if !exists {
+			cti[t] = make([]string, 0)
+		}
+		cti[t] = append(cti[t], namePath(append(names, name)))
+	}
+}

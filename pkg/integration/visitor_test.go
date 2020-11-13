@@ -9,7 +9,7 @@ import (
 )
 
 func TestNestingModeAggregator(t *testing.T) {
-	p, err := getProvider()
+	p, err := getProvider(&IntegrationTestConfig{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -28,7 +28,7 @@ func TestNestingModeAggregator(t *testing.T) {
 
 func TestProbe(t *testing.T) {
 	name := "aws_appmesh_route"
-	p, err := getProvider()
+	p, err := getProvider(&IntegrationTestConfig{})
 	if err != nil {
 		t.Fatal(err)
 	}

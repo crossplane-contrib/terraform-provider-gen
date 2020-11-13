@@ -36,6 +36,10 @@ const (
 	AttributeTypeComplex128
 	AttributeTypeByte
 	AttributeTypeBool
+
+	// AttributeTypeMapStringKey means that the field is a map[string]<type>
+	// where <type> is defined by the value of Field.AttributeField.MapValueType
+	AttributeTypeMapStringKey
 )
 
 var InvalidMRNameEmpty error = errors.New(".Name is required")
@@ -73,7 +77,8 @@ type StructField struct {
 }
 
 type AttributeField struct {
-	Type AttributeType
+	Type         AttributeType
+	MapValueType AttributeType
 }
 
 type ManagedResource struct {

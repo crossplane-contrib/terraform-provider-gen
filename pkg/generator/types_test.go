@@ -482,3 +482,43 @@ func TestFieldFragmentsNested(t *testing.T) {
 		t.Errorf("Unexpected output from jen render.\nExpected:\n ---- \n%s\n ---- \nActual:\n%s", expected, actual)
 	}
 }
+
+func TestMapFragment(t *testing.T) {
+	f := Field{
+		// "Name" is appended to help visually differentiate field and type names
+		Name: FakeResourceName + "Name",
+		Type: FieldTypeStruct,
+		StructField: StructField{
+			PackagePath: FakePackagePath,
+			TypeName:    FakeResourceName,
+		},
+		Fields: []Field{
+			{
+				Name: "StrMap",
+				Type: FieldTypeAttribute,
+				AttributeField: AttributeField{
+					Type:         AttributeTypeMapStringKey,
+					MapValueType: AttributeTypeString,
+				},
+			},
+			{
+				Name: "BoolMap",
+				Type: FieldTypeAttribute,
+				AttributeField: AttributeField{
+					Type:         AttributeTypeMapStringKey,
+					MapValueType: AttributeTypeBool,
+				},
+			},
+		},
+	}
+	frags := FieldFragments(f)
+	actual := frags[0].Render()
+	expected := "type Test struct {\n" +
+		"	StrMap  map[string]string\n" +
+		"	BoolMap map[string]bool\n" +
+		"}"
+
+	if expected != actual {
+		t.Errorf("Unexpected output from jen render.\nExpected:\n ---- \n%s\n ---- \nActual:\n%s", expected, actual)
+	}
+}
