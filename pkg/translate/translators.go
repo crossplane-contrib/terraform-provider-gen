@@ -1,6 +1,8 @@
 package translate
 
 import (
+	"fmt"
+
 	"github.com/crossplane-contrib/terraform-provider-gen/pkg/generator"
 	"github.com/hashicorp/terraform/configs/configschema"
 	"github.com/hashicorp/terraform/providers"
@@ -61,10 +63,10 @@ func (fb *FieldBuilder) Unsupported() generator.Field {
 		generator.AttributeField{Type: generator.AttributeTypeUnsupported}).Build()
 }
 
-func (fb *FieldBuilder) ObjectField(typeName string, attrType cty.Type) *FieldBuilder {
+func (fb *FieldBuilder) ObjectField(typeName string, attrType cty.Type, schemaPath string) *FieldBuilder {
 	fields := make([]generator.Field, 0)
 	for k, t := range attrType.ElementType().AttributeTypes() {
-		fields = append(fields, TypeToField(k, t))
+		fields = append(fields, TypeToField(k, t, schemaPath))
 	}
 	return fb.StructField(typeName, fields)
 }
@@ -75,7 +77,8 @@ func (fb *FieldBuilder) Build() generator.Field {
 
 // TypeToField converts a terraform *configschema.Attribute
 // to a crossplane generator.Field
-func TypeToField(name string, attrType cty.Type) generator.Field {
+func TypeToField(name string, attrType cty.Type, parentPath string) generator.Field {
+	sp := appendToSchemaPath(parentPath, name)
 	fb := NewFieldBuilder(name)
 	switch attrType.FriendlyName() {
 	case "bool":
@@ -134,7 +137,7 @@ func TypeToField(name string, attrType cty.Type) generator.Field {
 		if !attrType.ElementType().IsObjectType() {
 			return fb.Unsupported()
 		}
-		return fb.IsSlice(true).ObjectField(strcase.ToCamel(name), attrType).Build()
+		return fb.IsSlice(true).ObjectField(strcase.ToCamel(name), attrType, sp).Build()
 	case "set of object":
 		// need better error handling here to help generate error messages
 		// which would describe why the field is unsupported
@@ -144,7 +147,7 @@ func TypeToField(name string, attrType cty.Type) generator.Field {
 		if !attrType.ElementType().IsObjectType() {
 			return fb.Unsupported()
 		}
-		return fb.IsSlice(true).ObjectField(strcase.ToCamel(name), attrType).Build()
+		return fb.IsSlice(true).ObjectField(strcase.ToCamel(name), attrType, sp).Build()
 	default:
 		// maybe this panic, either here or further up the stack
 		return fb.Unsupported()
@@ -160,25 +163,32 @@ func SpecOrStatus(attr *configschema.Attribute) SpecOrStatusField {
 	return AtProviderField
 }
 
+func appendToSchemaPath(sp, name string) string {
+	return fmt.Sprintf("%s_%s", sp, name)
+}
+
 // SpecStatusAttributeFields iterates through the terraform configschema.Attribute map
 // found under Block.Attributes, translating each attribute to a generator.Field and
 // grouping them as spec or status based on their optional/required/computed properties.
-func SpecOrStatusAttributeFields(attributes map[string]*configschema.Attribute) ([]generator.Field, []generator.Field) {
+func SpecOrStatusAttributeFields(attributes map[string]*configschema.Attribute, namer generator.ResourceNamer) ([]generator.Field, []generator.Field) {
 	forProvider := make([]generator.Field, 0)
 	atProvider := make([]generator.Field, 0)
+	forProviderPath := fmt.Sprintf("%s_%s_%s", namer.TypeName(), namer.SpecTypeName(), namer.ForProviderTypeName())
+	atProviderPath := fmt.Sprintf("%s_%s_%s", namer.TypeName(), namer.StatusTypeName(), namer.AtProviderTypeName())
 	for name, attr := range attributes {
-		f := TypeToField(name, attr.Type)
 		switch SpecOrStatus(attr) {
 		case ForProviderField:
+			f := TypeToField(name, attr.Type, forProviderPath)
 			forProvider = append(forProvider, f)
 		case AtProviderField:
+			f := TypeToField(name, attr.Type, atProviderPath)
 			atProvider = append(atProvider, f)
 		}
 	}
 	return forProvider, atProvider
 }
 
-func NestedBlockFields(blocks map[string]*configschema.NestedBlock, packagePath string) []generator.Field {
+func NestedBlockFields(blocks map[string]*configschema.NestedBlock, packagePath, schemaPath string) []generator.Field {
 	fields := make([]generator.Field, 0)
 	for name, block := range blocks {
 		f := generator.Field{
@@ -198,10 +208,11 @@ func NestedBlockFields(blocks map[string]*configschema.NestedBlock, packagePath 
 			Required: IsBlockRequired(block),
 			IsSlice:  IsBlockSlice(block),
 		}
+		sp := appendToSchemaPath(schemaPath, f.Name)
 		for n, attr := range block.Attributes {
-			f.Fields = append(f.Fields, TypeToField(n, attr.Type))
+			f.Fields = append(f.Fields, TypeToField(n, attr.Type, sp))
 		}
-		f.Fields = append(f.Fields, NestedBlockFields(block.BlockTypes, packagePath)...)
+		f.Fields = append(f.Fields, NestedBlockFields(block.BlockTypes, packagePath, sp)...)
 		fields = append(fields, f)
 	}
 	return fields
@@ -210,7 +221,7 @@ func NestedBlockFields(blocks map[string]*configschema.NestedBlock, packagePath 
 func SchemaToManagedResource(name, packagePath string, s providers.Schema) *generator.ManagedResource {
 	namer := generator.NewDefaultNamer(strcase.ToCamel(name))
 	mr := generator.NewManagedResource(namer.TypeName(), packagePath).WithNamer(namer)
-	spec, status := SpecOrStatusAttributeFields(s.Block.Attributes)
+	spec, status := SpecOrStatusAttributeFields(s.Block.Attributes, namer)
 	mr.Parameters = generator.Field{
 		Type: generator.FieldTypeStruct,
 		StructField: generator.StructField{
@@ -227,23 +238,14 @@ func SchemaToManagedResource(name, packagePath string, s providers.Schema) *gene
 		},
 		Fields: status,
 	}
-	nb := NestedBlockFields(s.Block.BlockTypes, packagePath)
+	nb := NestedBlockFields(s.Block.BlockTypes, packagePath, namer.TypeName())
 	if len(nb) > 0 {
+		// currently the assumption is that the nested types are spec fields
+		// TODO: write an analyzer to ensure that deeply nested types are not common in status
+		// we could do tree search into the structure of a NestedBlock
 		mr.Parameters.Fields = append(mr.Parameters.Fields, nb...)
 	}
 	return mr
-}
-
-func BlockToField(name, typeName string, tfBlock *configschema.Block, enclosingField *generator.Field) *generator.Field {
-	f := &generator.Field{
-		Name: name,
-		Type: generator.FieldTypeStruct,
-		StructField: generator.StructField{
-			PackagePath: enclosingField.StructField.PackagePath,
-			TypeName:    typeName,
-		},
-	}
-	return f
 }
 
 func IsBlockRequired(nb *configschema.NestedBlock) bool {

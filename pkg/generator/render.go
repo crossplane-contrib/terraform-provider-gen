@@ -236,6 +236,8 @@ func TypeStatement(f Field, s *j.Statement) *j.Statement {
 			return s.Map(j.String()).Bool()
 		case AttributeTypeString:
 			return s.Map(j.String()).String()
+		case AttributeTypeInt:
+			return s.Map(j.String()).Int()
 		}
 	}
 

@@ -56,13 +56,14 @@ type StructTag struct {
 }
 
 type Field struct {
-	Name           string
-	Type           FieldType
-	Fields         []Field
-	StructField    StructField
-	AttributeField AttributeField
-	IsSlice        bool
-	Tag            *StructTag
+	Name             string
+	Type             FieldType
+	Fields           []Field
+	StructField      StructField
+	AttributeField   AttributeField
+	IsSlice          bool
+	Tag              *StructTag
+	EncodeFnRenderer EncodeFnRenderer
 
 	// struct comment "annotations"
 	Computed  bool

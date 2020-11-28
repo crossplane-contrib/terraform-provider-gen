@@ -6,6 +6,7 @@ import (
 	"github.com/crossplane-contrib/terraform-provider-gen/pkg/generator"
 	"github.com/hashicorp/terraform/configs/configschema"
 	"github.com/hashicorp/terraform/providers"
+	"github.com/iancoleman/strcase"
 	"github.com/zclconf/go-cty/cty"
 )
 
@@ -20,7 +21,7 @@ func testFixtureOptionalStringField() (string, string, *configschema.Attribute) 
 
 func TestTypeToField(t *testing.T) {
 	name, expectedName, attr := testFixtureOptionalStringField()
-	f := TypeToField(name, attr.Type)
+	f := TypeToField(name, attr.Type, "")
 	if f.Name != expectedName {
 		t.Errorf("Wrong value from TypeToField for Field.Name. expected=%s, actual=%s", expectedName, f.Name)
 	}
@@ -82,8 +83,10 @@ func testFixtureFlatBlock() providers.Schema {
 }
 
 func TestSpecStatusAttributeFields(t *testing.T) {
+	resourceName := "test"
 	s := testFixtureFlatBlock()
-	fp, ap := SpecOrStatusAttributeFields(s.Block.Attributes)
+	namer := generator.NewDefaultNamer(strcase.ToCamel(resourceName))
+	fp, ap := SpecOrStatusAttributeFields(s.Block.Attributes, namer)
 	total := len(s.Block.Attributes)
 	expectedAP := 1
 	expectedFP := total - expectedAP
