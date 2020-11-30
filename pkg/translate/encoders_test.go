@@ -12,13 +12,13 @@ func TestRenderPrimitiveType(t *testing.T) {
 		Name: "SomeAttribute",
 	}
 	bt := &backTracker{
-		TFName:  "some_attribute_tf_name",
-		CtyType: cty.String,
+		tfName:  "some_attribute_tf_name",
+		ctyType: cty.String,
 	}
 	funcPrefix := "encodeResource_Spec_ForProvider"
 	receivedType := "ForProvider"
 
-	actual := bt.RenderEncodeFn(funcPrefix, receivedType, f)
+	actual := bt.GenerateEncodeFn(funcPrefix, receivedType, f)
 	expected := `func encodeResource_Spec_ForProvider_SomeAttribute(p *ForProvider, vals map[string]cty.Value) {
 	vals["some_attribute_tf_name"] = cty.StringVal(p.SomeAttribute)
 }`
@@ -33,14 +33,14 @@ func TestRenderPrimitiveCollectionType(t *testing.T) {
 	}
 	ls := cty.List(cty.String)
 	bt := &backTracker{
-		TFName:         "some_attribute_tf_name",
-		CtyType:        cty.String,
-		CollectionType: &ls,
+		tfName:         "some_attribute_tf_name",
+		ctyType:        cty.String,
+		collectionType: &ls,
 	}
 	funcPrefix := "encodeResource_Spec_ForProvider"
 	receivedType := "ForProvider"
 
-	actual := bt.RenderEncodeFn(funcPrefix, receivedType, f)
+	actual := bt.GenerateEncodeFn(funcPrefix, receivedType, f)
 	expected := `func encodeResource_Spec_ForProvider_SomeAttribute(p *ForProvider, vals map[string]cty.Value) {
 	colVals := make([]cty.Value, 0)
 	for _, value := range p.SomeAttribute {
@@ -60,17 +60,17 @@ func TestRenderContainerType(t *testing.T) {
 			{
 				Name: "AttributeOne",
 				Type: generator.FieldTypeAttribute,
-				EncodeFnRenderer: &backTracker{
-					TFName:  "attribute_one_tf_name",
-					CtyType: cty.String,
+				EncodeFnGenerator: &backTracker{
+					tfName:  "attribute_one_tf_name",
+					ctyType: cty.String,
 				},
 			},
 			{
 				Name: "DeeperField",
 				Type: generator.FieldTypeStruct,
-				EncodeFnRenderer: &backTracker{
-					TFName: "deeper_field_tf_name",
-					CtyType: cty.Object(map[string]cty.Type{
+				EncodeFnGenerator: &backTracker{
+					tfName: "deeper_field_tf_name",
+					ctyType: cty.Object(map[string]cty.Type{
 						"deeper_attribute_one_tf_name": cty.String,
 					}),
 				},
@@ -78,18 +78,18 @@ func TestRenderContainerType(t *testing.T) {
 					{
 						Name: "DeeperAttributeOne",
 						Type: generator.FieldTypeAttribute,
-						EncodeFnRenderer: &backTracker{
-							TFName:  "deeper_attribute_one_tf_name",
-							CtyType: cty.String,
+						EncodeFnGenerator: &backTracker{
+							tfName:  "deeper_attribute_one_tf_name",
+							ctyType: cty.String,
 						},
 					},
 				},
 			},
 		},
 		Type: generator.FieldTypeStruct,
-		EncodeFnRenderer: &backTracker{
-			TFName: "nested_field_tf_name",
-			CtyType: cty.Object(map[string]cty.Type{
+		EncodeFnGenerator: &backTracker{
+			tfName: "nested_field_tf_name",
+			ctyType: cty.Object(map[string]cty.Type{
 				"attribute_one_tf_name": cty.String,
 				"deeper_attribute_one_tf_name": cty.Object(map[string]cty.Type{
 					"deeper_attribute_one_tf_name": cty.String,
@@ -99,7 +99,7 @@ func TestRenderContainerType(t *testing.T) {
 	}
 	funcPrefix := "encodeResource_Spec_ForProvider"
 	receivedType := "NestedField"
-	actual := f.EncodeFnRenderer.RenderEncodeFn(funcPrefix, receivedType, f)
+	actual := f.EncodeFnGenerator.GenerateEncodeFn(funcPrefix, receivedType, f)
 	expected := `func encodeResource_Spec_ForProvider_NestedField(p *NestedField, vals map[string]cty.Value) {
 	ctyVal = make(map[string]cty.Value)
 	encodeResource_Spec_ForProvider_NestedField_AttributeOne(p, ctyVal)
@@ -133,40 +133,40 @@ func TestRenderContainerCollectionType(t *testing.T) {
 			{
 				Name: "AttributeOne",
 				Type: generator.FieldTypeAttribute,
-				EncodeFnRenderer: &backTracker{
-					TFName:  "attribute_one_tf_name",
-					CtyType: cty.String,
+				EncodeFnGenerator: &backTracker{
+					tfName:  "attribute_one_tf_name",
+					ctyType: cty.String,
 				},
 			},
 			{
 				Name: "DeeperField",
 				Type: generator.FieldTypeStruct,
-				EncodeFnRenderer: &backTracker{
-					TFName:  "deeper_field_tf_name",
-					CtyType: cty.EmptyObject,
+				EncodeFnGenerator: &backTracker{
+					tfName:  "deeper_field_tf_name",
+					ctyType: cty.EmptyObject,
 				},
 				Fields: []generator.Field{
 					{
 						Name: "DeeperAttributeOne",
 						Type: generator.FieldTypeAttribute,
-						EncodeFnRenderer: &backTracker{
-							TFName:  "deeper_attribute_one_tf_name",
-							CtyType: cty.String,
+						EncodeFnGenerator: &backTracker{
+							tfName:  "deeper_attribute_one_tf_name",
+							ctyType: cty.String,
 						},
 					},
 				},
 			},
 		},
 		Type: generator.FieldTypeStruct,
-		EncodeFnRenderer: &backTracker{
-			TFName:         "nested_field_tf_name",
-			CtyType:        cty.EmptyObject,
-			CollectionType: &lt,
+		EncodeFnGenerator: &backTracker{
+			tfName:         "nested_field_tf_name",
+			ctyType:        cty.EmptyObject,
+			collectionType: &lt,
 		},
 	}
 	funcPrefix := "encodeResource_Spec_ForProvider"
 	receivedType := "NestedField"
-	actual := f.EncodeFnRenderer.RenderEncodeFn(funcPrefix, receivedType, f)
+	actual := f.EncodeFnGenerator.GenerateEncodeFn(funcPrefix, receivedType, f)
 	expected := `func encodeResource_Spec_ForProvider_NestedField(p *NestedField, vals map[string]cty.Value) {
 	valsForCollection = make([]cty.Value, 0)
 	for _, v := range p.NestedField {

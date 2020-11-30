@@ -21,19 +21,19 @@ type FieldBuilder struct {
 	f *generator.Field
 }
 
-func NewFieldBuilder(name string) *FieldBuilder {
-	fb := &FieldBuilder{f: &generator.Field{}}
-	return fb.Name(name)
-}
-
-func (fb *FieldBuilder) Name(name string) *FieldBuilder {
-	fb.f.Name = strcase.ToCamel(name)
-	fb.f.Tag = &generator.StructTag{
-		&generator.StructTagJson{
-			Name: name,
+func NewFieldBuilder(name string, ctyType cty.Type) *FieldBuilder {
+	encFnGen := NewEncodeAttributeFnGenerator(name, ctyType)
+	return &FieldBuilder{
+		f: &generator.Field{
+			Name: strcase.ToCamel(name),
+			Tag: &generator.StructTag{
+				Json: &generator.StructTagJson{
+					Name: name,
+				},
+			},
+			EncodeFnGenerator: encFnGen,
 		},
 	}
-	return fb
 }
 
 func (fb *FieldBuilder) AttributeField(af generator.AttributeField) *FieldBuilder {
@@ -79,7 +79,7 @@ func (fb *FieldBuilder) Build() generator.Field {
 // to a crossplane generator.Field
 func TypeToField(name string, attrType cty.Type, parentPath string) generator.Field {
 	sp := appendToSchemaPath(parentPath, name)
-	fb := NewFieldBuilder(name)
+	fb := NewFieldBuilder(name, attrType)
 	switch attrType.FriendlyName() {
 	case "bool":
 		return fb.AttributeField(
@@ -188,6 +188,12 @@ func SpecOrStatusAttributeFields(attributes map[string]*configschema.Attribute, 
 	return forProvider, atProvider
 }
 
+var (
+	ctyListCollectionType = cty.List(cty.EmptyObject)
+	ctySetCollectionType  = cty.Set(cty.EmptyObject)
+	ctyMapCollectionType  = cty.Map(cty.EmptyObject)
+)
+
 func NestedBlockFields(blocks map[string]*configschema.NestedBlock, packagePath, schemaPath string) []generator.Field {
 	fields := make([]generator.Field, 0)
 	for name, block := range blocks {
@@ -201,13 +207,15 @@ func NestedBlockFields(blocks map[string]*configschema.NestedBlock, packagePath,
 				TypeName: strcase.ToCamel(name),
 			},
 			Tag: &generator.StructTag{
-				&generator.StructTagJson{
+				Json: &generator.StructTagJson{
 					Name: name,
 				},
 			},
 			Required: IsBlockRequired(block),
 			IsSlice:  IsBlockSlice(block),
 		}
+		f.EncodeFnGenerator = NewBlockEncodeFnGenerator(name, block)
+
 		sp := appendToSchemaPath(schemaPath, f.Name)
 		for n, attr := range block.Attributes {
 			f.Fields = append(f.Fields, TypeToField(n, attr.Type, sp))
@@ -229,6 +237,7 @@ func SchemaToManagedResource(name, packagePath string, s providers.Schema) *gene
 			TypeName:    namer.ForProviderTypeName(),
 		},
 		Fields: spec,
+		Name:   namer.ForProviderTypeName(),
 	}
 	mr.Observation = generator.Field{
 		Type: generator.FieldTypeStruct,
@@ -237,6 +246,7 @@ func SchemaToManagedResource(name, packagePath string, s providers.Schema) *gene
 			TypeName:    namer.AtProviderTypeName(),
 		},
 		Fields: status,
+		Name:   namer.AtProviderTypeName(),
 	}
 	nb := NestedBlockFields(s.Block.BlockTypes, packagePath, namer.TypeName())
 	if len(nb) > 0 {

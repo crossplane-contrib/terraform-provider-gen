@@ -7,93 +7,93 @@ import (
 	"text/template"
 
 	"github.com/crossplane-contrib/terraform-provider-gen/pkg/generator"
+	tpl "github.com/crossplane-contrib/terraform-provider-gen/pkg/template"
 	"github.com/hashicorp/terraform/configs/configschema"
 	"github.com/zclconf/go-cty/cty"
 )
 
+const primitiveTypeTemplateName = "primitive"
+const primitiveCollectionTypeTemplateName = "primitiveCollection"
+const primitiveMapTypeTemplateName = "primitiveMap"
+const containerTypeTemplateName = "container"
+const containerCollectionTypeTemplateName = "containerCollection"
+const managedResourceTemplate = "managedResource"
+
+func NewBlockEncodeFnGenerator(terraformName string, block *configschema.NestedBlock) generator.EncodeFnGenerator {
+	//ctyType cty.Type, collectionType *cty.Type)
+	var colType *cty.Type
+	switch block.Nesting {
+	case configschema.NestingSingle, configschema.NestingGroup:
+		// this is not a collection type, signal that it is a null type
+		colType = nil
+	case configschema.NestingList:
+		colType = &ctyListCollectionType
+	case configschema.NestingSet:
+		colType = &ctySetCollectionType
+	case configschema.NestingMap:
+		colType = &ctyMapCollectionType
+	default:
+		panic("Unrecognized nesting type")
+	}
+	return &backTracker{
+		tfName:         terraformName,
+		ctyType:        cty.EmptyObject,
+		collectionType: colType,
+	}
+}
+
+func NewEncodeAttributeFnGenerator(terraformName string, ctyType cty.Type) generator.EncodeFnGenerator {
+	if ctyType.IsCollectionType() {
+		ct := ctyType.ElementType()
+		return &backTracker{
+			tfName:         terraformName,
+			ctyType:        ct,
+			collectionType: &ctyType,
+		}
+	}
+	return &backTracker{
+		tfName:  terraformName,
+		ctyType: ctyType,
+	}
+}
+
 type backTracker struct {
-	TFName         string    // the terraform field name will be different from the crd field name and json tag
-	CtyType        cty.Type  // type of field, to be used to select a cty val conversion function (eg cty.StringVal)
-	CollectionType *cty.Type // if this is a list/set/map then reflect the collection type here for another layer of translation
+	tfName         string    // the terraform field name will be different from the crd field name and json tag
+	ctyType        cty.Type  // type of field, to be used to select a cty val conversion function (eg cty.StringVal)
+	collectionType *cty.Type // if this is a list/set/map then reflect the collection type here for another layer of translation
+}
+
+func (bt *backTracker) GenerateEncodeFn(funcPrefix, receivedType string, f generator.Field) string {
+	efr := bt.encodeFnRenderer(funcPrefix, receivedType, f)
+	switch true {
+	case bt.ctyType.IsPrimitiveType():
+		if bt.collectionType != nil {
+			if bt.collectionType.IsMapType() {
+				return renderPrimitiveType(efr, primitiveMapTypeTemplateName)
+			}
+			return renderPrimitiveType(efr, primitiveCollectionTypeTemplateName)
+		}
+		return renderPrimitiveType(efr, primitiveTypeTemplateName)
+	case bt.ctyType.IsMapType() || bt.ctyType.IsObjectType():
+		if bt.collectionType != nil {
+			return renderContainerType(efr, containerCollectionTypeTemplateName)
+		}
+		return renderContainerType(efr, containerTypeTemplateName)
+	default:
+		panic(fmt.Sprintf("Unknown cty type in RenderEncodeFn(), cannot render encoder for: %s", bt.ctyType.FriendlyName()))
+	}
 }
 
 func (bt *backTracker) encodeFnRenderer(funcPrefix, receivedType string, f generator.Field) *encodeFnRenderer {
 	return &encodeFnRenderer{
 		FuncName:           fmt.Sprintf("%s_%s", funcPrefix, f.Name),
 		ParentType:         receivedType,
-		TerraformFieldName: bt.TFName,
+		TerraformFieldName: bt.tfName,
 		StructFieldName:    f.Name,
 		Children:           f.Fields,
-		CtyType:            bt.CtyType,
-		CollectionType:     bt.CollectionType,
+		CtyType:            bt.ctyType,
+		CollectionType:     bt.collectionType,
 	}
-}
-
-func (bt *backTracker) RenderEncodeFn(funcPrefix, receivedType string, f generator.Field) string {
-	efr := bt.encodeFnRenderer(funcPrefix, receivedType, f)
-	switch true {
-	case bt.CtyType.IsPrimitiveType():
-		if bt.CollectionType != nil {
-			return renderPrimitiveCollectionType(efr)
-		}
-		return renderPrimitiveType(efr)
-	case bt.CtyType.IsMapType() || bt.CtyType.IsObjectType():
-		if bt.CollectionType != nil {
-			return renderContainerCollectionType(efr)
-		}
-		return renderContainerType(efr)
-	//case bt.CtyType.IsCollectionType():
-	// matches on map, set and list, but map should early return
-	//return renderContainerCollectionType(efr)
-	default:
-		panic(fmt.Sprintf("Unknown cty type in RenderEncodeFn(), cannot render encoder for: %s", bt.CtyType.FriendlyName()))
-	}
-}
-
-func renderPrimitiveType(efr *encodeFnRenderer) string {
-	b := bytes.NewBuffer(make([]byte, 0))
-	encoderTemplates["primitive"].Execute(b, efr)
-
-	return b.String()
-}
-
-func renderPrimitiveCollectionType(efr *encodeFnRenderer) string {
-	b := bytes.NewBuffer(make([]byte, 0))
-	encoderTemplates["primitiveCollection"].Execute(b, efr)
-
-	return b.String()
-}
-
-func renderContainerType(efr *encodeFnRenderer) string {
-	b := bytes.NewBuffer(make([]byte, 0))
-	encoderTemplates["container"].Execute(b, efr)
-
-	rendered := []string{b.String()}
-	rendered = append(rendered, renderChildEncoders(efr)...)
-
-	return strings.Join(rendered, "\n\n")
-}
-
-func renderContainerCollectionType(efr *encodeFnRenderer) string {
-	b := bytes.NewBuffer(make([]byte, 0))
-	encoderTemplates["containerCollection"].Execute(b, efr)
-
-	rendered := []string{b.String()}
-	rendered = append(rendered, renderChildEncoders(efr)...)
-	return strings.Join(rendered, "\n\n")
-}
-
-// this has been extracted into its own function so that it can be used by containers and container collections
-func renderChildEncoders(efr *encodeFnRenderer) []string {
-	rendered := make([]string, 0)
-	for _, child := range efr.Children {
-		receivedType := efr.StructFieldName
-		if child.Type == generator.FieldTypeStruct {
-			receivedType = child.Name
-		}
-		rendered = append(rendered, child.EncodeFnRenderer.RenderEncodeFn(efr.FuncName, receivedType, child))
-	}
-	return rendered
 }
 
 type encodeFnRenderer struct {
@@ -104,6 +104,28 @@ type encodeFnRenderer struct {
 	Children           []generator.Field
 	CtyType            cty.Type
 	CollectionType     *cty.Type
+}
+
+func renderPrimitiveType(efr *encodeFnRenderer, template string) string {
+	b := bytes.NewBuffer(make([]byte, 0))
+	encoderTemplates[template].Execute(b, efr)
+
+	return b.String()
+}
+
+func renderContainerType(efr *encodeFnRenderer, template string) string {
+	b := bytes.NewBuffer(make([]byte, 0))
+	encoderTemplates[template].Execute(b, efr)
+
+	rendered := []string{b.String()}
+	for _, child := range efr.Children {
+		receivedType := efr.StructFieldName
+		if child.Type == generator.FieldTypeStruct {
+			receivedType = child.Name
+		}
+		rendered = append(rendered, child.EncodeFnGenerator.GenerateEncodeFn(efr.FuncName, receivedType, child))
+	}
+	return strings.Join(rendered, "\n\n")
 }
 
 func (efr *encodeFnRenderer) ConversionFunc() string {
@@ -134,28 +156,32 @@ func (efr *encodeFnRenderer) CollectionConversionFunc() string {
 	panic(fmt.Sprintf("Unknown CollectionType in CollectionConversionFunc(), cannot render convert function for: %s", efr.CollectionType.FriendlyName()))
 }
 
+func (efr *encodeFnRenderer) GenerateChildrenFuncCalls(indentLevels int, attr string) string {
+	indent := indentLevelString(indentLevels)
+	return generateChildrenFuncCalls(indent, efr.FuncName, attr, efr.Children)
+}
+
+func generateChildrenFuncCalls(indent, funcName string, attr string, children []generator.Field) string {
+	lines := make([]string, 0)
+	for _, child := range children {
+		if child.Type == generator.FieldTypeAttribute {
+			l := fmt.Sprintf("%s%s_%s(%s, ctyVal)", indent, funcName, child.Name, attr)
+			lines = append(lines, l)
+		}
+		if child.Type == generator.FieldTypeStruct {
+			l := fmt.Sprintf("%s%s_%s(%s, ctyVal)", indent, funcName, child.Name, fmt.Sprintf("%s.%s", attr, child.Name))
+			lines = append(lines, l)
+		}
+	}
+	return strings.Join(lines, "\n")
+}
+
 func indentLevelString(levels int) string {
 	str := ""
 	for i := 0; i < levels; i++ {
 		str = str + "\t"
 	}
 	return str
-}
-
-func (efr *encodeFnRenderer) GenerateChildrenFuncCalls(indentLevels int, attr string) string {
-	indent := indentLevelString(indentLevels)
-	lines := make([]string, 0)
-	for _, child := range efr.Children {
-		if child.Type == generator.FieldTypeAttribute {
-			l := fmt.Sprintf("%s%s_%s(%s, ctyVal)", indent, efr.FuncName, child.Name, attr)
-			lines = append(lines, l)
-		}
-		if child.Type == generator.FieldTypeStruct {
-			l := fmt.Sprintf("%s%s_%s(%s, ctyVal)", indent, efr.FuncName, child.Name, fmt.Sprintf("%s.%s", attr, child.Name))
-			lines = append(lines, l)
-		}
-	}
-	return strings.Join(lines, "\n")
 }
 
 var primitiveTypeTemplate = `func {{.FuncName}}(p *{{.ParentType}}, vals map[string]cty.Value) {
@@ -168,6 +194,14 @@ var primitiveCollectionTypeTemplate = `func {{.FuncName}}(p *{{.ParentType}}, va
 		colVals = append(colVals, {{.ConversionFunc}}(value))
 	}
 	vals["{{.TerraformFieldName}}"] = {{.CollectionConversionFunc}}(colVals)
+}`
+
+var primitiveMapTypeTemplate = `func {{.FuncName}}(p *{{.ParentType}}, vals map[string]cty.Value) {
+	mVals := make(map[string]cty.Value)
+	for key, value := range p.{{.StructFieldName}} {
+		mVals[key] = {{.ConversionFunc}}(value)
+	}
+	vals["{{.TerraformFieldName}}"] = cty.MapVal(mVals)
 }`
 
 var containerTypeTemplate = `func {{.FuncName}}(p *{{.ParentType}}, vals map[string]cty.Value) {
@@ -186,74 +220,69 @@ var containerCollectionTypeTemplate = `func {{.FuncName}}(p *{{.ParentType}}, va
 	vals["{{.TerraformFieldName}}"] = {{.CollectionConversionFunc}}(valsForCollection)
 }`
 
+var managedResourceEntrypointTemplate = `func {{.EncodeFnName}}(r {{.TypeName}}) cty.Value {
+	ctyVals := make(map[string]cty.Value)
+{{.ForProviderCalls}}
+{{.AtProviderCalls}}
+	return cty.ObjectVal(ctyVals)
+}`
+
 var encoderTemplates = map[string]*template.Template{
-	"primitive":           template.Must(template.New("primitive").Parse(primitiveTypeTemplate)),
-	"primitiveCollection": template.Must(template.New("primitiveCollection").Parse(primitiveCollectionTypeTemplate)),
-	"container":           template.Must(template.New("container").Parse(containerTypeTemplate)),
-	"containerCollection": template.Must(template.New("ContainerCollection").Parse(containerCollectionTypeTemplate)),
+	primitiveTypeTemplateName:           template.Must(template.New(primitiveTypeTemplateName).Parse(primitiveTypeTemplate)),
+	primitiveCollectionTypeTemplateName: template.Must(template.New(primitiveCollectionTypeTemplateName).Parse(primitiveCollectionTypeTemplate)),
+	primitiveMapTypeTemplateName:        template.Must(template.New(primitiveMapTypeTemplateName).Parse(primitiveMapTypeTemplate)),
+	containerTypeTemplateName:           template.Must(template.New(containerTypeTemplateName).Parse(containerTypeTemplate)),
+	containerCollectionTypeTemplateName: template.Must(template.New(containerCollectionTypeTemplateName).Parse(containerCollectionTypeTemplate)),
+	managedResourceTemplate:             template.Must(template.New(managedResourceTemplate).Parse(managedResourceEntrypointTemplate)),
 }
 
-// ImpliedType returns the cty.Type that would result from decoding a
-// configuration block using the receiving block schema.
-//
-// ImpliedType always returns a result, even if the given schema is
-// inconsistent.
-func impliedType(b *configschema.Block) cty.Type {
-	if b == nil {
-		return cty.EmptyObject
-	}
+var _ generator.EncodeFnGenerator = &backTracker{}
 
-	atys := make(map[string]cty.Type)
+func renderManagedResourceEncoder(funcName, typeName string, forProvider, atProvider generator.Field) string {
+	forProviderCalls := generateChildrenFuncCalls("\t", funcName, "r.Spec.ForProvider", forProvider.Fields)
+	atProviderCalls := generateChildrenFuncCalls("\t", funcName, "r.Status.AtProvider", atProvider.Fields)
 
-	for name, attrS := range b.Attributes {
-		atys[name] = attrS.Type
-	}
-
-	for name, blockS := range b.BlockTypes {
-		if _, exists := atys[name]; exists {
-			panic("invalid schema, blocks and attributes cannot have the same name")
-		}
-
-		childType := blockS.Block.ImpliedType()
-
-		switch blockS.Nesting {
-		case configschema.NestingSingle, configschema.NestingGroup:
-			atys[name] = childType
-		case configschema.NestingList:
-			// We prefer to use a list where possible, since it makes our
-			// implied type more complete, but if there are any
-			// dynamically-typed attributes inside we must use a tuple
-			// instead, which means our type _constraint_ must be
-			// cty.DynamicPseudoType to allow the tuple type to be decided
-			// separately for each value.
-			if childType.HasDynamicTypes() {
-				atys[name] = cty.DynamicPseudoType
-			} else {
-				atys[name] = cty.List(childType)
+	b := bytes.NewBuffer(make([]byte, 0))
+	encoderTemplates[managedResourceTemplate].Execute(b, struct {
+		EncodeFnName     string
+		TypeName         string
+		ForProviderCalls string
+		AtProviderCalls  string
+	}{
+		EncodeFnName:     funcName,
+		TypeName:         typeName,
+		ForProviderCalls: forProviderCalls,
+		AtProviderCalls:  atProviderCalls,
+	})
+	rendered := []string{b.String()}
+	for _, field := range []generator.Field{forProvider, atProvider} {
+		for _, child := range field.Fields {
+			receivedType := field.Name
+			if child.Type == generator.FieldTypeStruct {
+				receivedType = child.Name
 			}
-		case configschema.NestingSet:
-			if childType.HasDynamicTypes() {
-				panic("can't use cty.DynamicPseudoType inside a block type with NestingSet")
-			}
-			atys[name] = cty.Set(childType)
-		case configschema.NestingMap:
-			// We prefer to use a map where possible, since it makes our
-			// implied type more complete, but if there are any
-			// dynamically-typed attributes inside we must use an object
-			// instead, which means our type _constraint_ must be
-			// cty.DynamicPseudoType to allow the tuple type to be decided
-			// separately for each value.
-			if childType.HasDynamicTypes() {
-				atys[name] = cty.DynamicPseudoType
-			} else {
-				atys[name] = cty.Map(childType)
-			}
-		default:
-			panic("invalid nesting type")
+			rendered = append(rendered, child.EncodeFnGenerator.GenerateEncodeFn(funcName, receivedType, child))
 		}
 	}
-
-	return cty.Object(atys)
+	return strings.Join(rendered, "\n\n")
 }
 
-var _ generator.EncodeFnRenderer = &backTracker{}
+func GenerateEncoders(mr *generator.ManagedResource, tg tpl.TemplateGetter) (string, error) {
+	fnName := fmt.Sprintf("Encode%s", mr.Namer().TypeName())
+
+	ttpl, err := tg.Get("hack/template/pkg/generator/encode.go.tmpl")
+	if err != nil {
+		return "", err
+	}
+
+	rendered := renderManagedResourceEncoder(fnName, mr.Namer().TypeName(), mr.Parameters, mr.Observation)
+	buf := new(bytes.Buffer)
+	tplParams := struct {
+		Encoders string
+	}{rendered}
+	err = ttpl.Execute(buf, tplParams)
+	if err != nil {
+		return "", err
+	}
+	return buf.String(), nil
+}

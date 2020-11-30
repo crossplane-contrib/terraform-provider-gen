@@ -1,5 +1,5 @@
 package generator
 
-type EncodeFnRenderer interface {
-	RenderEncodeFn(funcPrefix, receivedType string, f Field) string
+type EncodeFnGenerator interface {
+	GenerateEncodeFn(funcPrefix, receivedType string, f Field) string
 }
