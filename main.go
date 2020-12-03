@@ -87,7 +87,7 @@ func run() error {
 		}
 		tg := template.NewTemplateGetter(*repoRoot)
 		st := provider.NewSchemaTranslator(cfg, p.GetSchema(), tg)
-		return st.WriteAllTypeDefFiles()
+		return st.WriteAllGeneratedResourceFiles()
 	case nestingCmd.FullCommand():
 		p, err := client.NewGRPCProvider(*providerName, *pluginPath)
 		if err != nil {

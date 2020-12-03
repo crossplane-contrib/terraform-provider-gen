@@ -20,19 +20,22 @@ type PackageTranslator struct {
 	tg             template.TemplateGetter
 }
 
-func (pt *PackageTranslator) WriteTypeDefFile() error {
-	fmt.Printf("basepath=%s\n", pt.cfg.BasePath)
-	fmt.Printf("Writing %s to %s\n", pt.namer.ManagedResourceName(), pt.typesPath())
+func (pt *PackageTranslator) EnsureOutputLocation() error {
+	fmt.Printf("creating basepath=%s\n", pt.cfg.BasePath)
 	err := os.MkdirAll(pt.outputDir(), 0700)
 	if err != nil {
 		return err
 	}
+	return nil
+}
+
+func (pt *PackageTranslator) WriteTypeDefFile(mr *generator.ManagedResource) error {
+	fmt.Printf("Writing typedefs for %s to %s\n", pt.namer.ManagedResourceName(), pt.typesPath())
 	fh, err := os.OpenFile(pt.typesPath(), os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0755)
 	defer fh.Close()
 	if err != nil {
 		return err
 	}
-	mr := translate.SchemaToManagedResource(pt.namer.ManagedResourceName(), pt.cfg.PackagePath, pt.resourceSchema)
 	renderer := generator.NewManagedResourceTypeDefRenderer(mr, pt.tg)
 	rendered, err := renderer.Render()
 	if err != nil {
@@ -43,8 +46,28 @@ func (pt *PackageTranslator) WriteTypeDefFile() error {
 	return err
 }
 
+func (pt *PackageTranslator) WriteEncoderFile(mr *generator.ManagedResource) error {
+	fmt.Printf("Writing encoder for %s to %s\n", pt.namer.ManagedResourceName(), pt.encoderPath())
+	fh, err := os.OpenFile(pt.encoderPath(), os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0755)
+	defer fh.Close()
+	if err != nil {
+		return err
+	}
+	generated, err := translate.GenerateEncoders(mr, pt.tg)
+	if err != nil {
+		return err
+	}
+	buf := bytes.NewBufferString(generated)
+	_, err = io.Copy(fh, buf)
+	return err
+}
+
 func (pt *PackageTranslator) typesPath() string {
 	return path.Join(pt.outputDir(), "types.go")
+}
+
+func (pt *PackageTranslator) encoderPath() string {
+	return path.Join(pt.outputDir(), "encode.go")
 }
 
 func (pt *PackageTranslator) outputDir() string {

@@ -2,6 +2,7 @@ package provider
 
 import (
 	"github.com/crossplane-contrib/terraform-provider-gen/pkg/template"
+	"github.com/crossplane-contrib/terraform-provider-gen/pkg/translate"
 	"github.com/hashicorp/terraform/providers"
 )
 
@@ -19,11 +20,20 @@ type SchemaTranslator struct {
 	tg      template.TemplateGetter
 }
 
-func (st *SchemaTranslator) WriteAllTypeDefFiles() error {
+func (st *SchemaTranslator) WriteAllGeneratedResourceFiles() error {
 	for name, s := range st.schema.ResourceTypes {
 		namer := NewTerraformResourceNamer(st.cfg.ProviderName, name)
 		pt := NewPackageTranslator(s, namer, st.cfg, st.tg)
-		err := pt.WriteTypeDefFile()
+		err := pt.EnsureOutputLocation()
+		if err != nil {
+			return err
+		}
+		mr := translate.SchemaToManagedResource(pt.namer.ManagedResourceName(), pt.cfg.PackagePath, pt.resourceSchema)
+		err = pt.WriteTypeDefFile(mr)
+		if err != nil {
+			return err
+		}
+		err = pt.WriteEncoderFile(mr)
 		if err != nil {
 			return err
 		}
