@@ -28,11 +28,12 @@ func _() {
 	_ = x[AttributeTypeComplex128-17]
 	_ = x[AttributeTypeByte-18]
 	_ = x[AttributeTypeBool-19]
+	_ = x[AttributeTypeMapStringKey-20]
 }
 
-const _AttributeType_name = "AttributeTypeUnsupportedAttributeTypeUintptrAttributeTypeUint8AttributeTypeUint64AttributeTypeUint32AttributeTypeUint16AttributeTypeUintAttributeTypeStringAttributeTypeRuneAttributeTypeInt8AttributeTypeInt64AttributeTypeInt32AttributeTypeInt16AttributeTypeIntAttributeTypeFloat64AttributeTypeFloat32AttributeTypeComplex64AttributeTypeComplex128AttributeTypeByteAttributeTypeBool"
+const _AttributeType_name = "AttributeTypeUnsupportedAttributeTypeUintptrAttributeTypeUint8AttributeTypeUint64AttributeTypeUint32AttributeTypeUint16AttributeTypeUintAttributeTypeStringAttributeTypeRuneAttributeTypeInt8AttributeTypeInt64AttributeTypeInt32AttributeTypeInt16AttributeTypeIntAttributeTypeFloat64AttributeTypeFloat32AttributeTypeComplex64AttributeTypeComplex128AttributeTypeByteAttributeTypeBoolAttributeTypeMapStringKey"
 
-var _AttributeType_index = [...]uint16{0, 24, 44, 62, 81, 100, 119, 136, 155, 172, 189, 207, 225, 243, 259, 279, 299, 321, 344, 361, 378}
+var _AttributeType_index = [...]uint16{0, 24, 44, 62, 81, 100, 119, 136, 155, 172, 189, 207, 225, 243, 259, 279, 299, 321, 344, 361, 378, 403}
 
 func (i AttributeType) String() string {
 	if i < 0 || i >= AttributeType(len(_AttributeType_index)-1) {

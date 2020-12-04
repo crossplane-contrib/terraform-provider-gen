@@ -17,6 +17,7 @@ const primitiveCollectionTypeTemplateName = "primitiveCollection"
 const primitiveMapTypeTemplateName = "primitiveMap"
 const containerTypeTemplateName = "container"
 const containerCollectionTypeTemplateName = "containerCollection"
+const containerCollectionSingletonTypeTemplateName = "containerCollectionSingleton"
 const managedResourceTemplate = "managedResource"
 
 func NewBlockEncodeFnGenerator(terraformName string, block *configschema.NestedBlock) generator.EncodeFnGenerator {
@@ -76,6 +77,9 @@ func (bt *backTracker) GenerateEncodeFn(funcPrefix, receivedType string, f gener
 		return renderPrimitiveType(efr, primitiveTypeTemplateName)
 	case bt.ctyType.IsMapType() || bt.ctyType.IsObjectType():
 		if bt.collectionType != nil {
+			if !f.IsSlice {
+				return renderContainerType(efr, containerCollectionSingletonTypeTemplateName)
+			}
 			return renderContainerType(efr, containerCollectionTypeTemplateName)
 		}
 		return renderContainerType(efr, containerTypeTemplateName)
@@ -135,7 +139,7 @@ func (efr *encodeFnRenderer) ConversionFunc() string {
 	case cty.Bool:
 		return "cty.BoolVal"
 	case cty.Number:
-		return "cty.IntVal"
+		return "cty.NumberIntVal"
 	}
 	if efr.CtyType.IsObjectType() {
 		return "cty.ObjectVal"
@@ -184,11 +188,11 @@ func indentLevelString(levels int) string {
 	return str
 }
 
-var primitiveTypeTemplate = `func {{.FuncName}}(p *{{.ParentType}}, vals map[string]cty.Value) {
+var primitiveTypeTemplate = `func {{.FuncName}}(p {{.ParentType}}, vals map[string]cty.Value) {
 	vals["{{.TerraformFieldName}}"] = {{.ConversionFunc}}(p.{{.StructFieldName}})
 }`
 
-var primitiveCollectionTypeTemplate = `func {{.FuncName}}(p *{{.ParentType}}, vals map[string]cty.Value) {
+var primitiveCollectionTypeTemplate = `func {{.FuncName}}(p {{.ParentType}}, vals map[string]cty.Value) {
 	colVals := make([]cty.Value, 0)
 	for _, value := range p.{{.StructFieldName}} {
 		colVals = append(colVals, {{.ConversionFunc}}(value))
@@ -196,7 +200,7 @@ var primitiveCollectionTypeTemplate = `func {{.FuncName}}(p *{{.ParentType}}, va
 	vals["{{.TerraformFieldName}}"] = {{.CollectionConversionFunc}}(colVals)
 }`
 
-var primitiveMapTypeTemplate = `func {{.FuncName}}(p *{{.ParentType}}, vals map[string]cty.Value) {
+var primitiveMapTypeTemplate = `func {{.FuncName}}(p {{.ParentType}}, vals map[string]cty.Value) {
 	mVals := make(map[string]cty.Value)
 	for key, value := range p.{{.StructFieldName}} {
 		mVals[key] = {{.ConversionFunc}}(value)
@@ -204,36 +208,45 @@ var primitiveMapTypeTemplate = `func {{.FuncName}}(p *{{.ParentType}}, vals map[
 	vals["{{.TerraformFieldName}}"] = cty.MapVal(mVals)
 }`
 
-var containerTypeTemplate = `func {{.FuncName}}(p *{{.ParentType}}, vals map[string]cty.Value) {
-	ctyVal = make(map[string]cty.Value)
+var containerTypeTemplate = `func {{.FuncName}}(p {{.ParentType}}, vals map[string]cty.Value) {
+	ctyVal := make(map[string]cty.Value)
 {{.GenerateChildrenFuncCalls 1 "p"}}
 	vals["{{.TerraformFieldName}}"] = {{.ConversionFunc}}(ctyVal)
 }`
 
-var containerCollectionTypeTemplate = `func {{.FuncName}}(p *{{.ParentType}}, vals map[string]cty.Value) {
-	valsForCollection = make([]cty.Value, 0)
-	for _, v := range p.{{.StructFieldName}} {
-		ctyVal = make(map[string]cty.Value)
+var containerCollectionTypeTemplate = `func {{.FuncName}}(p []{{.ParentType}}, vals map[string]cty.Value) {
+	valsForCollection := make([]cty.Value, 0)
+	for _, v := range p {
+		ctyVal := make(map[string]cty.Value)
 {{.GenerateChildrenFuncCalls 2 "v"}}
 		valsForCollection = append(valsForCollection, {{.ConversionFunc}}(ctyVal))
 	}
 	vals["{{.TerraformFieldName}}"] = {{.CollectionConversionFunc}}(valsForCollection)
 }`
 
+var containerCollectionSingletonTypeTemplate = `func {{.FuncName}}(p {{.ParentType}}, vals map[string]cty.Value) {
+	valsForCollection := make([]cty.Value, 1)
+	ctyVal := make(map[string]cty.Value)
+{{.GenerateChildrenFuncCalls 1 "p"}}
+	valsForCollection[0] = {{.ConversionFunc}}(ctyVal)
+	vals["{{.TerraformFieldName}}"] = {{.CollectionConversionFunc}}(valsForCollection)
+}`
+
 var managedResourceEntrypointTemplate = `func {{.EncodeFnName}}(r {{.TypeName}}) cty.Value {
-	ctyVals := make(map[string]cty.Value)
+	ctyVal := make(map[string]cty.Value)
 {{.ForProviderCalls}}
 {{.AtProviderCalls}}
-	return cty.ObjectVal(ctyVals)
+	return cty.ObjectVal(ctyVal)
 }`
 
 var encoderTemplates = map[string]*template.Template{
-	primitiveTypeTemplateName:           template.Must(template.New(primitiveTypeTemplateName).Parse(primitiveTypeTemplate)),
-	primitiveCollectionTypeTemplateName: template.Must(template.New(primitiveCollectionTypeTemplateName).Parse(primitiveCollectionTypeTemplate)),
-	primitiveMapTypeTemplateName:        template.Must(template.New(primitiveMapTypeTemplateName).Parse(primitiveMapTypeTemplate)),
-	containerTypeTemplateName:           template.Must(template.New(containerTypeTemplateName).Parse(containerTypeTemplate)),
-	containerCollectionTypeTemplateName: template.Must(template.New(containerCollectionTypeTemplateName).Parse(containerCollectionTypeTemplate)),
-	managedResourceTemplate:             template.Must(template.New(managedResourceTemplate).Parse(managedResourceEntrypointTemplate)),
+	primitiveTypeTemplateName:                    template.Must(template.New(primitiveTypeTemplateName).Parse(primitiveTypeTemplate)),
+	primitiveCollectionTypeTemplateName:          template.Must(template.New(primitiveCollectionTypeTemplateName).Parse(primitiveCollectionTypeTemplate)),
+	primitiveMapTypeTemplateName:                 template.Must(template.New(primitiveMapTypeTemplateName).Parse(primitiveMapTypeTemplate)),
+	containerTypeTemplateName:                    template.Must(template.New(containerTypeTemplateName).Parse(containerTypeTemplate)),
+	containerCollectionTypeTemplateName:          template.Must(template.New(containerCollectionTypeTemplateName).Parse(containerCollectionTypeTemplate)),
+	containerCollectionSingletonTypeTemplateName: template.Must(template.New(containerCollectionSingletonTypeTemplateName).Parse(containerCollectionSingletonTypeTemplate)),
+	managedResourceTemplate:                      template.Must(template.New(managedResourceTemplate).Parse(managedResourceEntrypointTemplate)),
 }
 
 var _ generator.EncodeFnGenerator = &backTracker{}

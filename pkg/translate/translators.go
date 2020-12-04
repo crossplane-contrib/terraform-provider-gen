@@ -86,7 +86,7 @@ func TypeToField(name string, attrType cty.Type, parentPath string) generator.Fi
 			generator.AttributeField{Type: generator.AttributeTypeBool}).Build()
 	case "number":
 		return fb.AttributeField(
-			generator.AttributeField{Type: generator.AttributeTypeInt}).Build()
+			generator.AttributeField{Type: generator.AttributeTypeInt64}).Build()
 	case "string":
 		return fb.AttributeField(
 			generator.AttributeField{Type: generator.AttributeTypeString}).Build()
@@ -100,7 +100,7 @@ func TypeToField(name string, attrType cty.Type, parentPath string) generator.Fi
 		return fb.AttributeField(
 			generator.AttributeField{
 				Type:         generator.AttributeTypeMapStringKey,
-				MapValueType: generator.AttributeTypeInt,
+				MapValueType: generator.AttributeTypeInt64,
 			}).Build()
 	case "map of string":
 		return fb.AttributeField(
@@ -110,13 +110,13 @@ func TypeToField(name string, attrType cty.Type, parentPath string) generator.Fi
 			}).Build()
 	case "list of number":
 		return fb.IsSlice(true).AttributeField(
-			generator.AttributeField{Type: generator.AttributeTypeInt}).Build()
+			generator.AttributeField{Type: generator.AttributeTypeInt64}).Build()
 	case "list of string":
 		return fb.IsSlice(true).AttributeField(
 			generator.AttributeField{Type: generator.AttributeTypeString}).Build()
 	case "set of number":
 		return fb.IsSlice(true).AttributeField(
-			generator.AttributeField{Type: generator.AttributeTypeInt}).Build()
+			generator.AttributeField{Type: generator.AttributeTypeInt64}).Build()
 	case "set of string":
 		return fb.IsSlice(true).AttributeField(
 			generator.AttributeField{Type: generator.AttributeTypeString}).Build()
@@ -266,6 +266,13 @@ func IsBlockRequired(nb *configschema.NestedBlock) bool {
 }
 
 func IsBlockSlice(nb *configschema.NestedBlock) bool {
+	// this is used to indicate a single optional block, like aws_db_proxy.timeouts
+	// idk why it does not have a MaxItems = 1
+	// take a look w/:
+	// ./terraform-provider-gen analyze --plugin-path=$PLUGIN_PATH --providerName=$PROVIDER_NAME nesting | grep 'NestingList (0, 0'
+	if nb.MaxItems == 0 && nb.MinItems == 0 {
+		return false
+	}
 	if nb.MaxItems != 1 {
 		return true
 	}
