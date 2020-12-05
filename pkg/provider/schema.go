@@ -37,6 +37,11 @@ func (st *SchemaTranslator) WriteAllGeneratedResourceFiles() error {
 		if err != nil {
 			return err
 		}
+
+		err = pt.WriteDocFile(st.cfg.CRDVersion, pt.namer.ManagedResourceName(), st.cfg.ProviderName)
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil

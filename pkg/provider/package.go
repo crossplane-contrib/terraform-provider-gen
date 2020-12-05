@@ -11,6 +11,7 @@ import (
 	"github.com/crossplane-contrib/terraform-provider-gen/pkg/template"
 	"github.com/crossplane-contrib/terraform-provider-gen/pkg/translate"
 	"github.com/hashicorp/terraform/providers"
+	"github.com/iancoleman/strcase"
 )
 
 type PackageTranslator struct {
@@ -62,12 +63,49 @@ func (pt *PackageTranslator) WriteEncoderFile(mr *generator.ManagedResource) err
 	return err
 }
 
+func RenderGroupName(resourceName, providerName string) string {
+	return fmt.Sprintf("%s.terraform-provider-%s.crossplane.io",
+		strcase.ToKebab(resourceName), providerName)
+}
+
+func (pt *PackageTranslator) WriteDocFile(crdVersion, managedResourceName, providerName string) error {
+	fmt.Printf("Writing doc.go for %s to %s\n", pt.namer.ManagedResourceName(), pt.docPath())
+	fh, err := os.OpenFile(pt.docPath(), os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0755)
+	defer fh.Close()
+	if err != nil {
+		return err
+	}
+	ttpl, err := pt.tg.Get("hack/template/pkg/generator/doc.go.tmpl")
+	if err != nil {
+		return err
+	}
+
+	// eg iam-user.terraform-provider-aws.crossplane.io
+	groupName := RenderGroupName(managedResourceName, providerName)
+	buf := new(bytes.Buffer)
+	tplParams := struct {
+		KubernetesVersion   string
+		KubernetesGroupName string
+	}{crdVersion, groupName}
+	err = ttpl.Execute(buf, tplParams)
+	if err != nil {
+		return err
+	}
+
+	_, err = io.Copy(fh, buf)
+	return err
+}
+
 func (pt *PackageTranslator) typesPath() string {
 	return path.Join(pt.outputDir(), "types.go")
 }
 
 func (pt *PackageTranslator) encoderPath() string {
 	return path.Join(pt.outputDir(), "encode.go")
+}
+
+func (pt *PackageTranslator) docPath() string {
+	return path.Join(pt.outputDir(), "doc.go")
 }
 
 func (pt *PackageTranslator) outputDir() string {
