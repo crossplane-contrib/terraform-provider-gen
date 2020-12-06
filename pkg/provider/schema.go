@@ -1,6 +1,8 @@
 package provider
 
 import (
+	"fmt"
+
 	"github.com/crossplane-contrib/terraform-provider-gen/pkg/template"
 	"github.com/crossplane-contrib/terraform-provider-gen/pkg/translate"
 	"github.com/hashicorp/terraform/providers"
@@ -8,22 +10,26 @@ import (
 
 type SchemaTranslatorConfiguration struct {
 	CRDVersion   string
-	BasePath     string
 	PackagePath  string
 	ProviderName string
 }
 
 type SchemaTranslator struct {
-	cfg     *SchemaTranslatorConfiguration
-	schema  providers.GetSchemaResponse
-	renamer StringTransformer
-	tg      template.TemplateGetter
+	cfg      Config
+	schema   providers.GetSchemaResponse
+	renamer  StringTransformer
+	tg       template.TemplateGetter
+	basePath string
 }
 
 func (st *SchemaTranslator) WriteAllGeneratedResourceFiles() error {
 	for name, s := range st.schema.ResourceTypes {
-		namer := NewTerraformResourceNamer(st.cfg.ProviderName, name)
-		pt := NewPackageTranslator(s, namer, st.cfg, st.tg)
+		if st.cfg.IsExcluded(name) {
+			fmt.Printf("Skipping resource %s", name)
+			continue
+		}
+		namer := NewTerraformResourceNamer(st.cfg.Name, name)
+		pt := NewPackageTranslator(s, namer, st.basePath, st.cfg, st.tg)
 		err := pt.EnsureOutputLocation()
 		if err != nil {
 			return err
@@ -38,7 +44,7 @@ func (st *SchemaTranslator) WriteAllGeneratedResourceFiles() error {
 			return err
 		}
 
-		err = pt.WriteDocFile(st.cfg.CRDVersion, pt.namer.ManagedResourceName(), st.cfg.ProviderName)
+		err = pt.WriteDocFile(st.cfg.BaseCRDVersion, pt.namer.ManagedResourceName(), st.cfg.Name)
 		if err != nil {
 			return err
 		}
@@ -47,10 +53,11 @@ func (st *SchemaTranslator) WriteAllGeneratedResourceFiles() error {
 	return nil
 }
 
-func NewSchemaTranslator(cfg *SchemaTranslatorConfiguration, schema providers.GetSchemaResponse, tg template.TemplateGetter) *SchemaTranslator {
+func NewSchemaTranslator(cfg Config, basePath string, schema providers.GetSchemaResponse, tg template.TemplateGetter) *SchemaTranslator {
 	return &SchemaTranslator{
-		cfg:    cfg,
-		schema: schema,
-		tg:     tg,
+		basePath: basePath,
+		cfg:      cfg,
+		schema:   schema,
+		tg:       tg,
 	}
 }

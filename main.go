@@ -22,14 +22,14 @@ var (
 
 	schemaCmd    = gen.Command("schema", "subcommand for schema operations.")
 	pluginPath   = gen.Flag("plugin-path", "Path to provider plugin binary.").Required().String()
-	providerName = gen.Flag("providerName", "Terraform provider name. must match the value given to the 'provider' directive in a terraform config.").Required().String()
+	providerName = gen.Flag("providerName", "Terraform provider name. must match the value given to the 'provider' directive in a terraform config.").String()
 
-	generateSchemaCmd        = schemaCmd.Command("generate", "Use Provider.GetSchema() to generate crossplane types.")
-	onlyGenerateResourceFlag = generateSchemaCmd.Flag("resource", "Limit generation to the single resource named by this flag.").String()
-	outputDir                = generateSchemaCmd.Flag("output-dir", "output path").String()
-	packagePath              = generateSchemaCmd.Flag("package-path", "base path for output packages, eg github.com/crossplane-contrib/provider-terraform-aws/generated/resources").Required().String()
-	baseCrdVersion           = generateSchemaCmd.Flag("crd-version", "Base kind version for generated kubernete kinds, eg v1alpha1").Default("v1alpha1").String()
-	repoRoot                 = generateSchemaCmd.Flag("repo-root", "path to the root of the terraform-provider-gen so the binary can find templates (defaults to PWD)").String()
+	generateSchemaCmd = schemaCmd.Command("generate", "Use Provider.GetSchema() to generate crossplane types.")
+	outputDir         = generateSchemaCmd.Flag("output-dir", "output path").String()
+	cfgPath           = generateSchemaCmd.Flag("cfg-path", "path to schema generation config yaml").String()
+	//packagePath              = generateSchemaCmd.Flag("package-path", "base path for output packages, eg github.com/crossplane-contrib/provider-terraform-aws/generated/resources").Required().String()
+	//baseCrdVersion           = generateSchemaCmd.Flag("crd-version", "Base kind version for generated kubernete kinds, eg v1alpha1").Default("v1alpha1").String()
+	repoRoot = generateSchemaCmd.Flag("repo-root", "path to the root of the terraform-provider-gen so the binary can find templates (defaults to PWD)").String()
 
 	analyzeCmd       = gen.Command("analyze", "perform analysis on a provider's schemas")
 	nestingCmd       = analyzeCmd.Command("nesting", "report on the different nesting paths and modes observed in a provider")
@@ -75,18 +75,23 @@ func run() error {
 			return err
 		}
 	case generateSchemaCmd.FullCommand():
-		p, err := client.NewGRPCProvider(*providerName, *pluginPath)
+		cfg, err := provider.ConfigFromFile(*cfgPath)
 		if err != nil {
 			return err
 		}
-		cfg := &provider.SchemaTranslatorConfiguration{
-			CRDVersion:   *baseCrdVersion,
-			BasePath:     *outputDir,
-			PackagePath:  *packagePath,
-			ProviderName: *providerName,
+		if len(cfg.ExcludeResources) > 0 {
+			fmt.Println("Excluding the following resources from codegen:")
+			for _, p := range cfg.ExcludeResources {
+				fmt.Println(p)
+			}
 		}
+
 		tg := template.NewTemplateGetter(*repoRoot)
-		st := provider.NewSchemaTranslator(cfg, p.GetSchema(), tg)
+		p, err := client.NewGRPCProvider(cfg.Name, *pluginPath)
+		if err != nil {
+			return err
+		}
+		st := provider.NewSchemaTranslator(cfg, *outputDir, p.GetSchema(), tg)
 		return st.WriteAllGeneratedResourceFiles()
 	case nestingCmd.FullCommand():
 		p, err := client.NewGRPCProvider(*providerName, *pluginPath)

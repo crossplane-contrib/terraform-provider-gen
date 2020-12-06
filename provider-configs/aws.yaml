@@ -1,0 +1,33 @@
+name: aws
+base-crd-version: v1alpha1
+package-path: github.com/crossplane-contrib/provider-terraform-aws/generated/resources
+exclude-resources:
+# lambda alias has a nested map[string]float structure that confuses codegen
+# this is actually a surprising bug, needs more investigation
+ - aws_lambda_alias
+# all of the following resources have duplicate nested fields, which creates
+# duplicate/conflicting struct names.
+# the plan to handle these is to add a stage to code generation where we 
+# recursively search the field tree, renaming duplicates first-in-first-out,
+# by walking back up the tree and prepending parent names
+# until the result is unique
+# note: we can also determine whether collisions are duplicates or conflicting
+# but this is a bit more work and should be safe to leave as an improvement.
+ - aws_kinesis_firehose_delivery_stream
+ - aws_appmesh_route
+ - aws_wafv2_rule_group
+ - aws_emr_cluster
+ - aws_wafv2_web_acl
+ - aws_kinesis_analytics_application
+ - aws_autoscaling_group
+ - aws_appsync_graphql_api
+ - aws_iot_topic_rule
+ - aws_ssm_maintenance_window_task
+ - aws_cloudfront_distribution
+ - aws_codedeploy_deployment_group
+ - aws_lex_bot
+ - aws_codebuild_project
+ - aws_backup_plan
+ - aws_appmesh_virtual_node
+ - aws_lex_intent
+ - aws_s3_bucket

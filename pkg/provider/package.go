@@ -17,12 +17,13 @@ import (
 type PackageTranslator struct {
 	namer          TerraformResourceNamer
 	resourceSchema providers.Schema
-	cfg            *SchemaTranslatorConfiguration
+	cfg            Config
 	tg             template.TemplateGetter
+	basePath       string
 }
 
 func (pt *PackageTranslator) EnsureOutputLocation() error {
-	fmt.Printf("creating basepath=%s\n", pt.cfg.BasePath)
+	fmt.Printf("creating basepath=%s\n", pt.basePath)
 	err := os.MkdirAll(pt.outputDir(), 0700)
 	if err != nil {
 		return err
@@ -109,14 +110,15 @@ func (pt *PackageTranslator) docPath() string {
 }
 
 func (pt *PackageTranslator) outputDir() string {
-	return path.Join(pt.cfg.BasePath, pt.namer.PackageName(), pt.cfg.CRDVersion)
+	return path.Join(pt.basePath, pt.namer.PackageName(), pt.cfg.BaseCRDVersion)
 }
 
-func NewPackageTranslator(s providers.Schema, namer TerraformResourceNamer, cfg *SchemaTranslatorConfiguration, tg template.TemplateGetter) *PackageTranslator {
+func NewPackageTranslator(s providers.Schema, namer TerraformResourceNamer, basePath string, cfg Config, tg template.TemplateGetter) *PackageTranslator {
 	return &PackageTranslator{
 		namer:          namer,
 		resourceSchema: s,
 		cfg:            cfg,
 		tg:             tg,
+		basePath:       basePath,
 	}
 }

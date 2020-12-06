@@ -14,6 +14,7 @@ require (
 	github.com/zclconf/go-cty v1.7.0
 	gopkg.in/alecthomas/kingpin.v2 v2.2.6
 	k8s.io/apimachinery v0.18.8
+	sigs.k8s.io/yaml v1.2.0
 )
 
 replace (
