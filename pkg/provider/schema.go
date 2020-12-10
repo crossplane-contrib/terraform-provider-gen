@@ -28,7 +28,7 @@ func (st *SchemaTranslator) WriteAllGeneratedResourceFiles() error {
 			fmt.Printf("Skipping resource %s", name)
 			continue
 		}
-		namer := NewTerraformResourceNamer(st.cfg.Name, name)
+		namer := NewTerraformResourceNamer(st.cfg.Name, name, st.cfg.BaseCRDVersion)
 		pt := NewPackageTranslator(s, namer, st.basePath, st.cfg, st.tg)
 		err := pt.EnsureOutputLocation()
 		if err != nil {
@@ -44,7 +44,23 @@ func (st *SchemaTranslator) WriteAllGeneratedResourceFiles() error {
 			return err
 		}
 
-		err = pt.WriteDocFile(st.cfg.BaseCRDVersion, pt.namer.ManagedResourceName(), st.cfg.Name)
+		err = pt.WriteCompareFile()
+		if err != nil {
+			return err
+		}
+		err = pt.WriteConfigureFile()
+		if err != nil {
+			return err
+		}
+		err = pt.WriteDecodeFile()
+		if err != nil {
+			return err
+		}
+		err = pt.WriteDocFile()
+		if err != nil {
+			return err
+		}
+		err = pt.WriteIndexFile()
 		if err != nil {
 			return err
 		}

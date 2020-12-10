@@ -232,7 +232,17 @@ var containerCollectionSingletonTypeTemplate = `func {{.FuncName}}(p {{.ParentTy
 	vals["{{.TerraformFieldName}}"] = {{.CollectionConversionFunc}}(valsForCollection)
 }`
 
-var managedResourceEntrypointTemplate = `func {{.EncodeFnName}}(r {{.TypeName}}) cty.Value {
+var managedResourceEntrypointTemplate = `type ctyEncoder struct{}
+
+func (e *ctyEncoder) EncodeCty(mr resource.Managed, schema *providers.Schema) (cty.Value, error) {
+	r, ok := mr.(*{{ .TypeName}})
+	if !ok {
+		return cty.NilVal, fmt.Errorf("EncodeType received a resource.Managed value which is not a {{ .TypeName}}.")
+	}
+	return {{.EncodeFnName}}(*r), nil
+}
+
+func {{.EncodeFnName}}(r {{.TypeName}}) cty.Value {
 	ctyVal := make(map[string]cty.Value)
 {{.ForProviderCalls}}
 {{.AtProviderCalls}}

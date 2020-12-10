@@ -15,6 +15,7 @@ import (
 
 const FakeResourceName string = "Test"
 const FakePackagePath string = "github.com/crossplane-contrib/fake"
+const DefaultAPIVersion string = "v1alpha1"
 
 func DefaultTestResource() *generator.ManagedResource {
 	return generator.NewManagedResource(FakeResourceName, FakePackagePath).WithNamer(generator.NewDefaultNamer(FakeResourceName))
@@ -205,7 +206,7 @@ var FixtureGenerators map[string]fixtureGenerator = map[string]fixtureGenerator{
 		if err != nil {
 			return "", err
 		}
-		namer := provider.NewTerraformResourceNamer(providerName, typeName)
+		namer := provider.NewTerraformResourceNamer(providerName, typeName, DefaultAPIVersion)
 		bucketResource := c.GetSchema().ResourceTypes[typeName]
 		mr := translate.SchemaToManagedResource(namer.PackageName(), packagePath, bucketResource)
 		renderer := generator.NewManagedResourceTypeDefRenderer(mr, tg)
