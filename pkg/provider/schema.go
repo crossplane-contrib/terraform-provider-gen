@@ -15,11 +15,12 @@ type SchemaTranslatorConfiguration struct {
 }
 
 type SchemaTranslator struct {
-	cfg      Config
-	schema   providers.GetSchemaResponse
-	renamer  StringTransformer
-	tg       template.TemplateGetter
-	basePath string
+	cfg             Config
+	schema          providers.GetSchemaResponse
+	renamer         StringTransformer
+	tg              template.TemplateGetter
+	basePath        string
+	overlayBasePath string
 }
 
 func (st *SchemaTranslator) WriteAllGeneratedResourceFiles() error {
@@ -29,7 +30,7 @@ func (st *SchemaTranslator) WriteAllGeneratedResourceFiles() error {
 			continue
 		}
 		namer := NewTerraformResourceNamer(st.cfg.Name, name, st.cfg.BaseCRDVersion)
-		pt := NewPackageTranslator(s, namer, st.basePath, st.cfg, st.tg)
+		pt := NewPackageTranslator(s, namer, st.basePath, st.overlayBasePath, st.cfg, st.tg)
 		err := pt.EnsureOutputLocation()
 		if err != nil {
 			return err
@@ -69,11 +70,12 @@ func (st *SchemaTranslator) WriteAllGeneratedResourceFiles() error {
 	return nil
 }
 
-func NewSchemaTranslator(cfg Config, basePath string, schema providers.GetSchemaResponse, tg template.TemplateGetter) *SchemaTranslator {
+func NewSchemaTranslator(cfg Config, basePath, overlayBasePath string, schema providers.GetSchemaResponse, tg template.TemplateGetter) *SchemaTranslator {
 	return &SchemaTranslator{
-		basePath: basePath,
-		cfg:      cfg,
-		schema:   schema,
-		tg:       tg,
+		overlayBasePath: overlayBasePath,
+		basePath:        basePath,
+		cfg:             cfg,
+		schema:          schema,
+		tg:              tg,
 	}
 }

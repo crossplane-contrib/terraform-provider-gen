@@ -26,6 +26,7 @@ var (
 
 	generateSchemaCmd = schemaCmd.Command("generate", "Use Provider.GetSchema() to generate crossplane types.")
 	outputDir         = generateSchemaCmd.Flag("output-dir", "output path").String()
+	overlayBasePath   = generateSchemaCmd.Flag("overlay-dir", "Path to search for files to overlay instead of generated code. Nesting mirrors output tree.").String()
 	cfgPath           = generateSchemaCmd.Flag("cfg-path", "path to schema generation config yaml").String()
 	//packagePath              = generateSchemaCmd.Flag("package-path", "base path for output packages, eg github.com/crossplane-contrib/provider-terraform-aws/generated/resources").Required().String()
 	//baseCrdVersion           = generateSchemaCmd.Flag("crd-version", "Base kind version for generated kubernete kinds, eg v1alpha1").Default("v1alpha1").String()
@@ -91,7 +92,7 @@ func run() error {
 		if err != nil {
 			return err
 		}
-		st := provider.NewSchemaTranslator(cfg, *outputDir, p.GetSchema(), tg)
+		st := provider.NewSchemaTranslator(cfg, *outputDir, *overlayBasePath, p.GetSchema(), tg)
 		return st.WriteAllGeneratedResourceFiles()
 	case nestingCmd.FullCommand():
 		p, err := client.NewGRPCProvider(*providerName, *pluginPath)

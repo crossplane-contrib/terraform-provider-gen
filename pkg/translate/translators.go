@@ -131,6 +131,8 @@ func TypeToField(name string, attrType cty.Type, parentPath string) generator.Fi
 	// but we need to spot check and confirm this.
 	case "list of object": // TODO: probably can be []map[string]string
 		//f.AttributeField.Type = generator.AttributeTypeUnsupported
+		// TODO: see note on "set of object" re object schemas, this may also apply
+		// to constructing lists of object
 		if !attrType.IsListType() {
 			return fb.Unsupported()
 		}
@@ -139,8 +141,12 @@ func TypeToField(name string, attrType cty.Type, parentPath string) generator.Fi
 		}
 		return fb.IsSlice(true).ObjectField(strcase.ToCamel(name), attrType, sp).Build()
 	case "set of object":
-		// need better error handling here to help generate error messages
-		// which would describe why the field is unsupported
+		// TODO: sets of objects have a fixed schema that we need to track in order to
+		// marshal them later. I think it may be an error to try to declare a set with
+		// an object definition consisting just of set fields (a subset of the fields)
+		// i've also seen (in provider configs) errors when optional set types are not
+		// declared. look at the provider config construction in provider_terraform_aws
+		// for an example.
 		if !attrType.IsSetType() {
 			return fb.Unsupported()
 		}
@@ -149,6 +155,8 @@ func TypeToField(name string, attrType cty.Type, parentPath string) generator.Fi
 		}
 		return fb.IsSlice(true).ObjectField(strcase.ToCamel(name), attrType, sp).Build()
 	default:
+		// TODO: need better error handling here to help generate error messages
+		// which would describe why the field is unsupported
 		// maybe this panic, either here or further up the stack
 		return fb.Unsupported()
 	}
@@ -231,6 +239,11 @@ func SchemaToManagedResource(name, packagePath string, s providers.Schema) *gene
 	mr := generator.NewManagedResource(namer.TypeName(), packagePath).WithNamer(namer)
 	spec, status := SpecOrStatusAttributeFields(s.Block.Attributes, namer)
 	mr.Parameters = generator.Field{
+		Tag: &generator.StructTag{
+			Json: &generator.StructTagJson{
+				Name: "forProvider",
+			},
+		},
 		Type: generator.FieldTypeStruct,
 		StructField: generator.StructField{
 			PackagePath: packagePath,
@@ -240,6 +253,11 @@ func SchemaToManagedResource(name, packagePath string, s providers.Schema) *gene
 		Name:   namer.ForProviderTypeName(),
 	}
 	mr.Observation = generator.Field{
+		Tag: &generator.StructTag{
+			Json: &generator.StructTagJson{
+				Name: "atProvider",
+			},
+		},
 		Type: generator.FieldTypeStruct,
 		StructField: generator.StructField{
 			PackagePath: packagePath,

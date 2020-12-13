@@ -201,6 +201,10 @@ var primitiveCollectionTypeTemplate = `func {{.FuncName}}(p {{.ParentType}}, val
 }`
 
 var primitiveMapTypeTemplate = `func {{.FuncName}}(p {{.ParentType}}, vals map[string]cty.Value) {
+	if len(p.{{.StructFieldName}}) == 0 {
+		vals["{{.TerraformFieldName}}"] = cty.NullVal(cty.Map(cty.String))
+		return
+	}
 	mVals := make(map[string]cty.Value)
 	for key, value := range p.{{.StructFieldName}} {
 		mVals[key] = {{.ConversionFunc}}(value)
@@ -246,6 +250,13 @@ func {{.EncodeFnName}}(r {{.TypeName}}) cty.Value {
 	ctyVal := make(map[string]cty.Value)
 {{.ForProviderCalls}}
 {{.AtProviderCalls}}
+	// always set id = external-name if it exists
+	// TODO: we should trim Id off schemas in an "optimize" pass
+	// before code generation
+	en := meta.GetExternalName(&r)
+	if len(en) > 0 {
+		ctyVal["id"] = cty.StringVal(en)
+	}
 	return cty.ObjectVal(ctyVal)
 }`
 

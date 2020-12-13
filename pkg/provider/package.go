@@ -32,7 +32,7 @@ func (pt *PackageTranslator) WriteTypeDefFile(mr *generator.ManagedResource) err
 }
 
 func (pt *PackageTranslator) WriteEncoderFile(mr *generator.ManagedResource) error {
-	outputPath := pt.outputPath("encoder.go")
+	outputPath := pt.outputPath("encode.go")
 	fmt.Printf("Writing encoder for %s to %s\n", pt.namer.ManagedResourceName(), outputPath)
 	fh, err := os.OpenFile(outputPath, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0755)
 	defer fh.Close()
@@ -69,6 +69,13 @@ func (pt *PackageTranslator) WriteIndexFile() error {
 }
 
 func (pt *PackageTranslator) renderWithNamer(filename string) error {
+	overlaid, err := pt.overlaid(filename)
+	if err != nil {
+		return err
+	}
+	if overlaid {
+		return nil
+	}
 	outputPath := pt.outputPath(filename)
 	fmt.Printf("Writing %s for %s to %s\n", filename, pt.namer.ManagedResourceName(), outputPath)
 	fh, err := os.OpenFile(outputPath, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0755)
@@ -91,16 +98,50 @@ func (pt *PackageTranslator) renderWithNamer(filename string) error {
 	return err
 }
 
+func (pt *PackageTranslator) overlaid(filename string) (bool, error) {
+	overlayPath := pt.overlayPath(filename)
+	if _, err := os.Stat(overlayPath); os.IsNotExist(err) {
+		return false, nil
+	}
+	in, err := os.Open(overlayPath)
+	if err != nil {
+		return false, err
+	}
+	defer in.Close()
+	outputPath := pt.outputPath(filename)
+	out, err := os.Create(outputPath)
+	if err != nil {
+		return false, err
+	}
+	defer out.Close()
+	_, err = io.Copy(out, in)
+	fmt.Printf("Overlayed %s onto %s\n", overlayPath, outputPath)
+	return true, err
+}
+
 func (pt *PackageTranslator) templatePath(filename string) string {
 	return fmt.Sprintf("hack/template/pkg/generator/%s.tmpl", filename)
 }
 
+func (pt *PackageTranslator) overlayPath(filename string) string {
+	// we treat overlay files as .txt so they don't confuse the compiler
+	ftxt := fmt.Sprintf("%s.txt", filename)
+	return path.Join(pt.overlayDir(), ftxt)
+}
+
+func (pt *PackageTranslator) overlayDir() string {
+	return pt.resourcePath(pt.overlayBasePath)
+}
 func (pt *PackageTranslator) outputPath(filename string) string {
 	return path.Join(pt.outputDir(), filename)
 }
 
 func (pt *PackageTranslator) outputDir() string {
-	return path.Join(pt.basePath, pt.namer.PackageName(), pt.namer.APIVersion())
+	return pt.resourcePath(pt.basePath)
+}
+
+func (pt *PackageTranslator) resourcePath(base string) string {
+	return path.Join(base, pt.namer.PackageName(), pt.namer.APIVersion())
 }
 
 func (pt *PackageTranslator) EnsureOutputLocation() error {
@@ -113,19 +154,21 @@ func (pt *PackageTranslator) EnsureOutputLocation() error {
 }
 
 type PackageTranslator struct {
-	namer          TerraformResourceNamer
-	resourceSchema providers.Schema
-	cfg            Config
-	tg             template.TemplateGetter
-	basePath       string
+	namer           TerraformResourceNamer
+	resourceSchema  providers.Schema
+	cfg             Config
+	tg              template.TemplateGetter
+	basePath        string
+	overlayBasePath string
 }
 
-func NewPackageTranslator(s providers.Schema, namer TerraformResourceNamer, basePath string, cfg Config, tg template.TemplateGetter) *PackageTranslator {
+func NewPackageTranslator(s providers.Schema, namer TerraformResourceNamer, basePath, overlayBasePath string, cfg Config, tg template.TemplateGetter) *PackageTranslator {
 	return &PackageTranslator{
-		namer:          namer,
-		resourceSchema: s,
-		cfg:            cfg,
-		tg:             tg,
-		basePath:       basePath,
+		namer:           namer,
+		resourceSchema:  s,
+		cfg:             cfg,
+		tg:              tg,
+		basePath:        basePath,
+		overlayBasePath: overlayBasePath,
 	}
 }
