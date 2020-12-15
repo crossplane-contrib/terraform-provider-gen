@@ -188,6 +188,11 @@ func SpecOrStatusAttributeFields(attributes map[string]*configschema.Attribute, 
 	forProviderPath := fmt.Sprintf("%s_%s_%s", namer.TypeName(), namer.SpecTypeName(), namer.ForProviderTypeName())
 	atProviderPath := fmt.Sprintf("%s_%s_%s", namer.TypeName(), namer.StatusTypeName(), namer.AtProviderTypeName())
 	for name, attr := range attributes {
+		// filter the top-level terraform id field out of the schema, these are
+		// manually handled in the generated encode/decode methods
+		if name == "id" {
+			continue
+		}
 		switch SpecOrStatus(attr) {
 		case ForProviderField:
 			f := TypeToField(name, attr.Type, forProviderPath)

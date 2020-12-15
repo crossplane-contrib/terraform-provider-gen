@@ -233,7 +233,7 @@ func {{.FuncName}}(k *{{.ParentType}}, p *{{.ParentType}}, md *plugin.MergeDescr
 
 var mergePrimitiveContainerTemplateStatus = `//mergePrimitiveContainerTemplateStatus
 func {{.FuncName}}(k *{{.ParentType}}, p *{{.ParentType}}, md *plugin.MergeDescription) bool {
-	if !{{.PrimitiveContainerComparison }}(p.{{ .StructFieldName }}, p.{{ .StructFieldName }}) {
+	if !{{.PrimitiveContainerComparison }}(k.{{ .StructFieldName }}, p.{{ .StructFieldName }}) {
 		k.{{ .StructFieldName }} = p.{{ .StructFieldName }}
 		md.StatusUpdated = true
 		return true
@@ -243,7 +243,7 @@ func {{.FuncName}}(k *{{.ParentType}}, p *{{.ParentType}}, md *plugin.MergeDescr
 
 var mergePrimitiveContainerTemplateSpec = `//mergePrimitiveContainerTemplateSpec
 func {{.FuncName}}(k *{{.ParentType}}, p *{{.ParentType}}, md *plugin.MergeDescription) bool {
-	if !{{.PrimitiveContainerComparison }}(p.{{ .StructFieldName }}, p.{{ .StructFieldName }}) {
+	if !{{.PrimitiveContainerComparison }}(k.{{ .StructFieldName }}, p.{{ .StructFieldName }}) {
 		p.{{ .StructFieldName }} = k.{{ .StructFieldName }}
 		md.NeedsProviderUpdate = true
 		return true
