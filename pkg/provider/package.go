@@ -48,16 +48,42 @@ func (pt *PackageTranslator) WriteEncoderFile(mr *generator.ManagedResource) err
 	return err
 }
 
-func (pt *PackageTranslator) WriteCompareFile() error {
-	return pt.renderWithNamer("compare.go")
+func (pt *PackageTranslator) WriteDecodeFile(mr *generator.ManagedResource) error {
+	outputPath := pt.outputPath("decode.go")
+	fmt.Printf("Writing decoder for %s to %s\n", pt.namer.ManagedResourceName(), outputPath)
+	fh, err := os.OpenFile(outputPath, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0755)
+	defer fh.Close()
+	if err != nil {
+		return err
+	}
+	generated, err := translate.GenerateDecoders(mr, pt.tg)
+	if err != nil {
+		return err
+	}
+	buf := bytes.NewBufferString(generated)
+	_, err = io.Copy(fh, buf)
+	return err
+}
+
+func (pt *PackageTranslator) WriteCompareFile(mr *generator.ManagedResource) error {
+	outputPath := pt.outputPath("compare.go")
+	fmt.Printf("Writing merger for %s to %s\n", pt.namer.ManagedResourceName(), outputPath)
+	fh, err := os.OpenFile(outputPath, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0755)
+	defer fh.Close()
+	if err != nil {
+		return err
+	}
+	generated, err := translate.GenerateMergers(mr, pt.tg)
+	if err != nil {
+		return err
+	}
+	buf := bytes.NewBufferString(generated)
+	_, err = io.Copy(fh, buf)
+	return err
 }
 
 func (pt *PackageTranslator) WriteConfigureFile() error {
 	return pt.renderWithNamer("configure.go")
-}
-
-func (pt *PackageTranslator) WriteDecodeFile() error {
-	return pt.renderWithNamer("decode.go")
 }
 
 func (pt *PackageTranslator) WriteDocFile() error {

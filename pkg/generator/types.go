@@ -64,6 +64,8 @@ type Field struct {
 	IsSlice           bool
 	Tag               *StructTag
 	EncodeFnGenerator EncodeFnGenerator
+	DecodeFnGenerator DecodeFnGenerator
+	MergeFnGenerator  MergeFnGenerator
 
 	// struct comment "annotations"
 	Computed  bool
@@ -128,4 +130,48 @@ func NewManagedResource(name, packagePath string) *ManagedResource {
 		Name:        name,
 		PackagePath: packagePath,
 	}
+}
+
+func AttributeTypeDeclaration(f Field) string {
+	switch f.AttributeField.Type {
+	case AttributeTypeUintptr:
+		return "uintptr"
+	case AttributeTypeUint8:
+		return "uint8"
+	case AttributeTypeUint64:
+		return "uint64"
+	case AttributeTypeUint32:
+		return "uint32"
+	case AttributeTypeUint16:
+		return "uint16"
+	case AttributeTypeUint:
+		return "uint"
+	case AttributeTypeString:
+		return "string"
+	case AttributeTypeRune:
+		return "rune"
+	case AttributeTypeInt8:
+		return "int8"
+	case AttributeTypeInt64:
+		return "int64"
+	case AttributeTypeInt32:
+		return "int32"
+	case AttributeTypeInt16:
+		return "int16"
+	case AttributeTypeInt:
+		return "int"
+	case AttributeTypeFloat64:
+		return "float64"
+	case AttributeTypeFloat32:
+		return "float32"
+	case AttributeTypeComplex64:
+		return "complex64"
+	case AttributeTypeComplex128:
+		return "complex128"
+	case AttributeTypeByte:
+		return "byte"
+	case AttributeTypeBool:
+		return "bool"
+	}
+	return "panic(\"unrecognized attribute type in pkg/generator/types.go:AttributeTypeDeclaration\")"
 }

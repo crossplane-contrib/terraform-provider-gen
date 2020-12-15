@@ -44,16 +44,16 @@ func (st *SchemaTranslator) WriteAllGeneratedResourceFiles() error {
 		if err != nil {
 			return err
 		}
+		err = pt.WriteDecodeFile(mr)
+		if err != nil {
+			return err
+		}
+		err = pt.WriteCompareFile(mr)
+		if err != nil {
+			return err
+		}
 
-		err = pt.WriteCompareFile()
-		if err != nil {
-			return err
-		}
 		err = pt.WriteConfigureFile()
-		if err != nil {
-			return err
-		}
-		err = pt.WriteDecodeFile()
 		if err != nil {
 			return err
 		}

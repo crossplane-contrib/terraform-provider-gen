@@ -23,6 +23,8 @@ type FieldBuilder struct {
 
 func NewFieldBuilder(name string, ctyType cty.Type) *FieldBuilder {
 	encFnGen := NewEncodeAttributeFnGenerator(name, ctyType)
+	decFnGen := NewDecodeAttributeFnGenerator(name, ctyType)
+	mergeFnGen := NewMergeAttributeFnGenerator(name, ctyType)
 	return &FieldBuilder{
 		f: &generator.Field{
 			Name: strcase.ToCamel(name),
@@ -32,6 +34,8 @@ func NewFieldBuilder(name string, ctyType cty.Type) *FieldBuilder {
 				},
 			},
 			EncodeFnGenerator: encFnGen,
+			DecodeFnGenerator: decFnGen,
+			MergeFnGenerator:  mergeFnGen,
 		},
 	}
 }
@@ -223,6 +227,8 @@ func NestedBlockFields(blocks map[string]*configschema.NestedBlock, packagePath,
 			IsSlice:  IsBlockSlice(block),
 		}
 		f.EncodeFnGenerator = NewBlockEncodeFnGenerator(name, block)
+		f.DecodeFnGenerator = NewBlockDecodeFnGenerator(name, block)
+		f.MergeFnGenerator = NewBlockMergeFnGenerator(name, block)
 
 		sp := appendToSchemaPath(schemaPath, f.Name)
 		for n, attr := range block.Attributes {
