@@ -22,9 +22,9 @@ type FieldBuilder struct {
 }
 
 func NewFieldBuilder(name string, ctyType cty.Type) *FieldBuilder {
-	encFnGen := NewEncodeAttributeFnGenerator(name, ctyType)
-	decFnGen := NewDecodeAttributeFnGenerator(name, ctyType)
-	mergeFnGen := NewMergeAttributeFnGenerator(name, ctyType)
+	encFnGen := NewAttributeEncodeFnGenerator(name, ctyType)
+	decFnGen := NewAttributeDecodeFnGenerator(name, ctyType)
+	mergeFnGen := NewAttributeMergeFnGenerator(name, ctyType)
 	return &FieldBuilder{
 		f: &generator.Field{
 			Name: strcase.ToCamel(name),

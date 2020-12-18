@@ -351,8 +351,17 @@ var statusTemplates = map[string]*template.Template{
 
 var _ generator.MergeFnGenerator = &backTracker{}
 
-func renderManagedResourceMerger(funcName, typeName string, forProvider, atProvider generator.Field) string {
-	// TODO: convert forProviderCalls/atProviderCalls to pass values correctly
+func GenerateMergers(mr *generator.ManagedResource, tg tpl.TemplateGetter) (string, error) {
+	funcName := fmt.Sprintf("Merge%s", mr.Namer().TypeName())
+	forProvider := mr.Parameters
+	atProvider := mr.Observation
+	typeName := mr.Namer().TypeName()
+
+	ttpl, err := tg.Get("hack/template/pkg/generator/compare.go.tmpl")
+	if err != nil {
+		return "", err
+	}
+
 	forProviderCalls := generateChildrenMergeFuncCalls("\t", funcName, forProvider.Fields, true, "&k.Spec.ForProvider", "&p.Spec.ForProvider")
 	atProviderCalls := generateChildrenMergeFuncCalls("\t", funcName, atProvider.Fields, false, "&k.Status.AtProvider", "&p.Status.AtProvider")
 
@@ -386,22 +395,10 @@ func renderManagedResourceMerger(funcName, typeName string, forProvider, atProvi
 			rendered = append(rendered, child.MergeFnGenerator.GenerateMergeFn(funcName, receivedType, child, false))
 		}
 	}
-	return strings.Join(rendered, "\n\n")
-}
-
-func GenerateMergers(mr *generator.ManagedResource, tg tpl.TemplateGetter) (string, error) {
-	fnName := fmt.Sprintf("Merge%s", mr.Namer().TypeName())
-
-	ttpl, err := tg.Get("hack/template/pkg/generator/compare.go.tmpl")
-	if err != nil {
-		return "", err
-	}
-
-	rendered := renderManagedResourceMerger(fnName, mr.Namer().TypeName(), mr.Parameters, mr.Observation)
 	buf := new(bytes.Buffer)
 	tplParams := struct {
 		Mergers string
-	}{rendered}
+	}{strings.Join(rendered, "\n\n")}
 	err = ttpl.Execute(buf, tplParams)
 	if err != nil {
 		return "", err

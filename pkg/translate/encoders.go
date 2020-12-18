@@ -43,7 +43,7 @@ func NewBlockEncodeFnGenerator(terraformName string, block *configschema.NestedB
 	}
 }
 
-func NewEncodeAttributeFnGenerator(terraformName string, ctyType cty.Type) generator.EncodeFnGenerator {
+func NewAttributeEncodeFnGenerator(terraformName string, ctyType cty.Type) generator.EncodeFnGenerator {
 	if ctyType.IsCollectionType() {
 		ct := ctyType.ElementType()
 		return &backTracker{
@@ -270,7 +270,17 @@ var encoderTemplates = map[string]*template.Template{
 
 var _ generator.EncodeFnGenerator = &backTracker{}
 
-func renderManagedResourceEncoder(funcName, typeName string, forProvider, atProvider generator.Field) string {
+func GenerateEncoders(mr *generator.ManagedResource, tg tpl.TemplateGetter) (string, error) {
+	funcName := fmt.Sprintf("Encode%s", mr.Namer().TypeName())
+	forProvider := mr.Parameters
+	atProvider := mr.Observation
+	typeName := mr.Namer().TypeName()
+
+	ttpl, err := tg.Get("hack/template/pkg/generator/encode.go.tmpl")
+	if err != nil {
+		return "", err
+	}
+
 	forProviderCalls := generateChildrenFuncCalls("\t", funcName, "r.Spec.ForProvider", forProvider.Fields)
 	atProviderCalls := generateChildrenFuncCalls("\t", funcName, "r.Status.AtProvider", atProvider.Fields)
 
@@ -296,25 +306,14 @@ func renderManagedResourceEncoder(funcName, typeName string, forProvider, atProv
 			rendered = append(rendered, child.EncodeFnGenerator.GenerateEncodeFn(funcName, receivedType, child))
 		}
 	}
-	return strings.Join(rendered, "\n\n")
-}
-
-func GenerateEncoders(mr *generator.ManagedResource, tg tpl.TemplateGetter) (string, error) {
-	fnName := fmt.Sprintf("Encode%s", mr.Namer().TypeName())
-
-	ttpl, err := tg.Get("hack/template/pkg/generator/encode.go.tmpl")
-	if err != nil {
-		return "", err
-	}
-
-	rendered := renderManagedResourceEncoder(fnName, mr.Namer().TypeName(), mr.Parameters, mr.Observation)
 	buf := new(bytes.Buffer)
 	tplParams := struct {
 		Encoders string
-	}{rendered}
+	}{strings.Join(rendered, "\n\n")}
 	err = ttpl.Execute(buf, tplParams)
 	if err != nil {
 		return "", err
 	}
+
 	return buf.String(), nil
 }

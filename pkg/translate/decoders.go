@@ -43,7 +43,7 @@ func NewBlockDecodeFnGenerator(terraformName string, block *configschema.NestedB
 	}
 }
 
-func NewDecodeAttributeFnGenerator(terraformName string, ctyType cty.Type) generator.DecodeFnGenerator {
+func NewAttributeDecodeFnGenerator(terraformName string, ctyType cty.Type) generator.DecodeFnGenerator {
 	if ctyType.IsCollectionType() {
 		ct := ctyType.ElementType()
 		return &backTracker{
@@ -275,7 +275,17 @@ var decoderTemplates = map[string]*template.Template{
 
 var _ generator.DecodeFnGenerator = &backTracker{}
 
-func renderManagedResourceDecoder(funcName, typeName string, forProvider, atProvider generator.Field) string {
+func GenerateDecoders(mr *generator.ManagedResource, tg tpl.TemplateGetter) (string, error) {
+	funcName := fmt.Sprintf("Decode%s", mr.Namer().TypeName())
+	forProvider := mr.Parameters
+	atProvider := mr.Observation
+	typeName := mr.Namer().TypeName()
+
+	ttpl, err := tg.Get("hack/template/pkg/generator/decode.go.tmpl")
+	if err != nil {
+		return "", err
+	}
+
 	// TODO: convert forProviderCalls/atProviderCalls to pass values correctly
 	forProviderCalls := generateChildrenDecodeFuncCalls("\t", funcName, "&new.Spec.ForProvider", forProvider.Fields)
 	atProviderCalls := generateChildrenDecodeFuncCalls("\t", funcName, "&new.Status.AtProvider", atProvider.Fields)
@@ -302,22 +312,11 @@ func renderManagedResourceDecoder(funcName, typeName string, forProvider, atProv
 			rendered = append(rendered, child.DecodeFnGenerator.GenerateDecodeFn(funcName, receivedType, child))
 		}
 	}
-	return strings.Join(rendered, "\n\n")
-}
 
-func GenerateDecoders(mr *generator.ManagedResource, tg tpl.TemplateGetter) (string, error) {
-	fnName := fmt.Sprintf("Decode%s", mr.Namer().TypeName())
-
-	ttpl, err := tg.Get("hack/template/pkg/generator/decode.go.tmpl")
-	if err != nil {
-		return "", err
-	}
-
-	rendered := renderManagedResourceDecoder(fnName, mr.Namer().TypeName(), mr.Parameters, mr.Observation)
 	buf := new(bytes.Buffer)
 	tplParams := struct {
 		Decoders string
-	}{rendered}
+	}{strings.Join(rendered, "\n\n")}
 	err = ttpl.Execute(buf, tplParams)
 	if err != nil {
 		return "", err
