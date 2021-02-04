@@ -20,17 +20,18 @@ var (
 	updateFixturesCmd = gen.Command("update-fixtures", "update test fixtures based on current codegen output")
 	repositoryRoot    = updateFixturesCmd.Flag("repo-root", "Path to root of repository so that the fixture generator can find paths").Required().String()
 
-	schemaCmd    = gen.Command("schema", "subcommand for schema operations.")
+	generateCmd  = gen.Command("generate", "code generator subcommands")
 	pluginPath   = gen.Flag("plugin-path", "Path to provider plugin binary.").Required().String()
 	providerName = gen.Flag("providerName", "Terraform provider name. must match the value given to the 'provider' directive in a terraform config.").String()
 
-	generateSchemaCmd = schemaCmd.Command("generate", "Use Provider.GetSchema() to generate crossplane types.")
-	outputDir         = generateSchemaCmd.Flag("output-dir", "output path").String()
-	overlayBasePath   = generateSchemaCmd.Flag("overlay-dir", "Path to search for files to overlay instead of generated code. Nesting mirrors output tree.").String()
-	cfgPath           = generateSchemaCmd.Flag("cfg-path", "path to schema generation config yaml").String()
-	//packagePath              = generateSchemaCmd.Flag("package-path", "base path for output packages, eg github.com/crossplane-contrib/provider-terraform-aws/generated/resources").Required().String()
-	//baseCrdVersion           = generateSchemaCmd.Flag("crd-version", "Base kind version for generated kubernete kinds, eg v1alpha1").Default("v1alpha1").String()
-	repoRoot = generateSchemaCmd.Flag("repo-root", "path to the root of the terraform-provider-gen so the binary can find templates (defaults to PWD)").String()
+	outputDir       = generateCmd.Flag("output-dir", "output path").String()
+	overlayBasePath = generateCmd.Flag("overlay-dir", "Path to search for files to overlay instead of generated code. Nesting mirrors output tree.").String()
+	cfgPath         = generateCmd.Flag("cfg-path", "path to schema generation config yaml").String()
+
+	bootStrapCmd = generateCmd.Command("bootstrap", "bootstrap a new provider")
+
+	generateSchemaCmd = generateCmd.Command("schema", "Use Provider.GetSchema() to generate crossplane types.")
+	repoRoot          = generateSchemaCmd.Flag("repo-root", "path to the root of the terraform-provider-gen so the binary can find templates (defaults to PWD)").String()
 
 	analyzeCmd       = gen.Command("analyze", "perform analysis on a provider's schemas")
 	nestingCmd       = analyzeCmd.Command("nesting", "report on the different nesting paths and modes observed in a provider")
@@ -40,10 +41,6 @@ var (
 	excludeTypesList = typesIndexCmd.Flag("exclude-types", "comma separated list of types to ignore (mutually exclusive with include-types)").String()
 	includeTypesList = typesIndexCmd.Flag("include-types", "comma separated list of types to include (mutually exclusive with ignore-types)").String()
 	listTypes        = typesIndexCmd.Flag("list-types", "Only list the types, leave out the breakdown of where they can be found").Bool()
-
-	//renderCmd = schemaCmd.Command("render", "render crossplane types for the given provider.")
-	//dumpSchemaCmd = schemaCmd.Command("dump", "Print schema to stdout.")
-	//jsonDumpFlag  = dumpSchemaCmd.Flag("json", "Output schema formatted as a json object.").Bool()
 )
 
 func main() {
@@ -52,16 +49,19 @@ func main() {
 
 func run() error {
 	switch kingpin.MustParse(gen.Parse(os.Args[1:])) {
-	/*
-		case dumpSchemaCmd.FullCommand():
-			provider, err := client.NewProvider(*providerName, *pluginPath)
-			defer provider.GRPCProvider.Close()
-			if err != nil {
-				return err
-			}
-			schema.Dump(provider, *jsonDumpFlag)
-			return nil
-	*/
+	case bootStrapCmd.FullCommand():
+		cfg, err := provider.ConfigFromFile(*cfgPath)
+		if err != nil {
+			return err
+		}
+		tg := template.NewTemplateGetter(*repoRoot)
+		p, err := client.NewGRPCProvider(cfg.Name, *pluginPath)
+		if err != nil {
+			return err
+		}
+		schema := p.GetSchema()
+		bs := provider.NewBootstrapper(cfg, tg, schema)
+		return bs.Bootstrap()
 	case updateFixturesCmd.FullCommand():
 		opts := []integration.TestConfigOption{
 			integration.WithPluginPath(*pluginPath),

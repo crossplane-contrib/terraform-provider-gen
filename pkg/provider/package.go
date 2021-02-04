@@ -6,6 +6,7 @@ import (
 	"io"
 	"os"
 	"path"
+	"syscall"
 
 	"github.com/crossplane-contrib/terraform-provider-gen/pkg/generator"
 	"github.com/crossplane-contrib/terraform-provider-gen/pkg/template"
@@ -83,7 +84,7 @@ func (pt *PackageTranslator) WriteCompareFile(mr *generator.ManagedResource) err
 }
 
 func (pt *PackageTranslator) WriteConfigureFile() error {
-	return pt.renderWithNamer("configure.go")
+		return pt.renderWithNamer("configure.go")
 }
 
 func (pt *PackageTranslator) WriteDocFile() error {
@@ -125,8 +126,14 @@ func (pt *PackageTranslator) renderWithNamer(filename string) error {
 }
 
 func (pt *PackageTranslator) overlaid(filename string) (bool, error) {
-	overlayPath := pt.overlayPath(filename)
-	if _, err := os.Stat(overlayPath); os.IsNotExist(err) {
+	if pt.overlayBasePath == "" {
+		return false, nil
+	}
+	overlayDir := pt.resourcePath(pt.overlayBasePath)
+	// we treat overlay files as .txt so they don't confuse the compiler
+	ftxt := fmt.Sprintf("%s.txt", filename)
+	overlayPath := path.Join(overlayDir, ftxt)
+	if _, err := os.Stat(overlayPath); os.IsNotExist(err) || err == syscall.ENOTDIR {
 		return false, nil
 	}
 	in, err := os.Open(overlayPath)
@@ -149,15 +156,6 @@ func (pt *PackageTranslator) templatePath(filename string) string {
 	return fmt.Sprintf("hack/template/pkg/generator/%s.tmpl", filename)
 }
 
-func (pt *PackageTranslator) overlayPath(filename string) string {
-	// we treat overlay files as .txt so they don't confuse the compiler
-	ftxt := fmt.Sprintf("%s.txt", filename)
-	return path.Join(pt.overlayDir(), ftxt)
-}
-
-func (pt *PackageTranslator) overlayDir() string {
-	return pt.resourcePath(pt.overlayBasePath)
-}
 func (pt *PackageTranslator) outputPath(filename string) string {
 	return path.Join(pt.outputDir(), filename)
 }
@@ -186,6 +184,18 @@ type PackageTranslator struct {
 	tg              template.TemplateGetter
 	basePath        string
 	overlayBasePath string
+}
+
+type PackageImport struct {
+	Name string
+	Path string
+}
+
+func (pt *PackageTranslator) PackageImport() PackageImport {
+	return PackageImport{
+		Name: pt.namer.PackageName(),
+		Path: path.Join(pt.cfg.PackagePath, pt.namer.PackageName(), pt.namer.APIVersion()),
+	}
 }
 
 func NewPackageTranslator(s providers.Schema, namer TerraformResourceNamer, basePath, overlayBasePath string, cfg Config, tg template.TemplateGetter) *PackageTranslator {

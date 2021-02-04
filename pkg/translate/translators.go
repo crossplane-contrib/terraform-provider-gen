@@ -21,18 +21,32 @@ type FieldBuilder struct {
 	f *generator.Field
 }
 
+func isReferenceType(t cty.Type) bool {
+	if t.IsMapType() {
+		return true
+	}
+	if t.IsCollectionType() {
+		return true
+	}
+	return false
+}
+
 func NewFieldBuilder(name string, ctyType cty.Type) *FieldBuilder {
 	encFnGen := NewAttributeEncodeFnGenerator(name, ctyType)
 	decFnGen := NewAttributeDecodeFnGenerator(name, ctyType)
 	mergeFnGen := NewAttributeMergeFnGenerator(name, ctyType)
+	st := &generator.StructTag{
+		Json: &generator.StructTagJson{
+			Name: name,
+		},
+	}
+	if isReferenceType(ctyType) {
+		st.Json.Omitempty = true
+	}
 	return &FieldBuilder{
 		f: &generator.Field{
 			Name: strcase.ToCamel(name),
-			Tag: &generator.StructTag{
-				Json: &generator.StructTagJson{
-					Name: name,
-				},
-			},
+			Tag: st,
 			EncodeFnGenerator: encFnGen,
 			DecodeFnGenerator: decFnGen,
 			MergeFnGenerator:  mergeFnGen,

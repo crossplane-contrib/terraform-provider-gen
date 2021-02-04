@@ -160,6 +160,16 @@ func (efr *encodeFnRenderer) CollectionConversionFunc() string {
 	panic(fmt.Sprintf("Unknown CollectionType in CollectionConversionFunc(), cannot render convert function for: %s", efr.CollectionType.FriendlyName()))
 }
 
+func (efr *encodeFnRenderer) EmptyCollectionConversionFunc() string {
+	if efr.CollectionType.IsSetType() {
+		return fmt.Sprintf("cty.SetValEmpty(%s)", efr.CtyType.GoString())
+	}
+	if efr.CollectionType.IsListType() {
+		return fmt.Sprintf("cty.ListValEmpty(%s)", efr.CtyType.GoString())
+	}
+	panic(fmt.Sprintf("Unknown CollectionType in EmptyCollectionConversionFunc(), cannot render convert function for: %s", efr.CollectionType.FriendlyName()))
+}
+
 func (efr *encodeFnRenderer) GenerateChildrenFuncCalls(indentLevels int, attr string) string {
 	indent := indentLevelString(indentLevels)
 	return generateChildrenFuncCalls(indent, efr.FuncName, attr, efr.Children)
@@ -197,7 +207,11 @@ var primitiveCollectionTypeTemplate = `func {{.FuncName}}(p {{.ParentType}}, val
 	for _, value := range p.{{.StructFieldName}} {
 		colVals = append(colVals, {{.ConversionFunc}}(value))
 	}
-	vals["{{.TerraformFieldName}}"] = {{.CollectionConversionFunc}}(colVals)
+	if len(colVals) == 0 {
+		vals["{{.TerraformFieldName}}"] = {{.EmptyCollectionConversionFunc}}
+	} else {
+		vals["{{.TerraformFieldName}}"] = {{.CollectionConversionFunc}}(colVals)
+    }
 }`
 
 var primitiveMapTypeTemplate = `func {{.FuncName}}(p {{.ParentType}}, vals map[string]cty.Value) {
@@ -225,7 +239,11 @@ var containerCollectionTypeTemplate = `func {{.FuncName}}(p []{{.ParentType}}, v
 {{.GenerateChildrenFuncCalls 2 "v"}}
 		valsForCollection = append(valsForCollection, {{.ConversionFunc}}(ctyVal))
 	}
-	vals["{{.TerraformFieldName}}"] = {{.CollectionConversionFunc}}(valsForCollection)
+    if len(valsForCollection) == 0 {
+		vals["{{.TerraformFieldName}}"] = {{.EmptyCollectionConversionFunc}}
+	} else {
+		vals["{{.TerraformFieldName}}"] = {{.CollectionConversionFunc}}(valsForCollection)
+	}
 }`
 
 var containerCollectionSingletonTypeTemplate = `func {{.FuncName}}(p {{.ParentType}}, vals map[string]cty.Value) {
@@ -233,7 +251,11 @@ var containerCollectionSingletonTypeTemplate = `func {{.FuncName}}(p {{.ParentTy
 	ctyVal := make(map[string]cty.Value)
 {{.GenerateChildrenFuncCalls 1 "p"}}
 	valsForCollection[0] = {{.ConversionFunc}}(ctyVal)
-	vals["{{.TerraformFieldName}}"] = {{.CollectionConversionFunc}}(valsForCollection)
+    if len(valsForCollection) == 0 {
+		vals["{{.TerraformFieldName}}"] = {{.EmptyCollectionConversionFunc}}
+    } else {
+		vals["{{.TerraformFieldName}}"] = {{.CollectionConversionFunc}}(valsForCollection)
+    }
 }`
 
 var managedResourceEntrypointTemplate = `type ctyEncoder struct{}

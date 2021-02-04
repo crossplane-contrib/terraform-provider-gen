@@ -9,11 +9,15 @@ import (
 )
 
 type Config struct {
-	Name               string   `json:"name"`
-	BaseCRDVersion     string   `json:"base-crd-version"`
-	PackagePath        string   `json:"package-path"`
-	ExcludeResources   []string `json:"exclude-resources"`
-	ExcludeResourceMap map[string]bool
+	Name                  string   `json:"name"`
+	BasePath              string   `json:"base-path"`
+	RootPackage           string   `json:"root-package"`
+	PackagePath           string   `json:"package-path"`
+	BaseCRDVersion        string   `json:"base-crd-version"`
+	ProviderConfigVersion string   `json:"provider-config-version"`
+	APIGroup              string   `json:"api-group"`
+	ExcludeResources      []string `json:"exclude-resources"`
+	ExcludeResourceMap    map[string]bool
 }
 
 func (c Config) IsExcluded(resourceName string) bool {

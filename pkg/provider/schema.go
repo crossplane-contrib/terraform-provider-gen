@@ -1,7 +1,11 @@
 package provider
 
 import (
+	"bytes"
 	"fmt"
+	"io"
+	"os"
+	"path"
 
 	"github.com/crossplane-contrib/terraform-provider-gen/pkg/template"
 	"github.com/crossplane-contrib/terraform-provider-gen/pkg/translate"
@@ -24,6 +28,7 @@ type SchemaTranslator struct {
 }
 
 func (st *SchemaTranslator) WriteAllGeneratedResourceFiles() error {
+	pis := make([]PackageImport, 0)
 	for name, s := range st.schema.ResourceTypes {
 		if st.cfg.IsExcluded(name) {
 			fmt.Printf("Skipping resource %s", name)
@@ -65,9 +70,42 @@ func (st *SchemaTranslator) WriteAllGeneratedResourceFiles() error {
 		if err != nil {
 			return err
 		}
+		pis = append(pis, pt.PackageImport())
+	}
+	return st.writeResourceImplementationIndex(pis)
+}
+
+func (st *SchemaTranslator) writeResourceImplementationIndex(pis []PackageImport) error {
+	dir := path.Dir(st.basePath)
+	err := os.MkdirAll(dir, 0700)
+	if err != nil {
+		return err
+	}
+	tpl, err := st.tg.Get(RESOURCE_IMPLEMENTATIONS_PATH)
+	if err != nil {
+		return err
+	}
+	buf := new(bytes.Buffer)
+	values := struct{
+		Config
+		PackageImports []PackageImport
+	}{
+		Config: st.cfg,
+		PackageImports: pis,
+	}
+	err = tpl.Execute(buf, values)
+	if err != nil {
+		return err
 	}
 
-	return nil
+	outPath := path.Join(dir, "implementations.go")
+	fh, err := os.OpenFile(outPath, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0755)
+	defer fh.Close()
+	if err != nil {
+		return err
+	}
+	_, err = io.Copy(fh, buf)
+	return err
 }
 
 func NewSchemaTranslator(cfg Config, basePath, overlayBasePath string, schema providers.GetSchemaResponse, tg template.TemplateGetter) *SchemaTranslator {

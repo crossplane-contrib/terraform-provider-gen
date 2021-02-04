@@ -2,7 +2,7 @@ module github.com/crossplane-contrib/terraform-provider-gen
 
 go 1.13
 
-replace github.com/crossplane-contrib/terraform-runtime => /Users/kasey/src/crossplane/terraform-provider-runtime
+replace github.com/crossplane-contrib/terraform-runtime => /Users/kasey/src/crossplane-contrib/terraform-provider-runtime
 
 require (
 	github.com/crossplane-contrib/terraform-runtime v0.0.0-00010101000000-000000000000

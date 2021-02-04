@@ -39,7 +39,7 @@ func NewBlockMergeFnGenerator(terraformName string, block *configschema.NestedBl
 	}
 }
 
-func NewMergeAttributeFnGenerator(terraformName string, ctyType cty.Type) generator.MergeFnGenerator {
+func NewAttributeMergeFnGenerator(terraformName string, ctyType cty.Type) generator.MergeFnGenerator {
 	if ctyType.IsCollectionType() {
 		ct := ctyType.ElementType()
 		return &backTracker{

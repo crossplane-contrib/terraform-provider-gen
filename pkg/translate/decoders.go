@@ -203,6 +203,10 @@ func {{.FuncName}}(p *{{.ParentType}}, vals map[string]cty.Value) {
 var primitiveMapTypeDecodeTemplate = `//primitiveMapTypeDecodeTemplate
 func {{.FuncName}}(p *{{.ParentType}}, vals map[string]cty.Value) {
 	// TODO: generalize generation of the element type, string elements are hard-coded atm
+	if vals["{{.TerraformFieldName}}"].IsNull() {
+		p.{{.StructFieldName}} = nil
+        return
+    }
 	vMap := make(map[string]string)
 	v := vals["{{.TerraformFieldName}}"].AsValueMap()
 	for key, value := range v {

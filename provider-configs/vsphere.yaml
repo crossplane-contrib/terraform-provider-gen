@@ -1,0 +1,19 @@
+name: vsphere
+base-crd-version: v1alpha1
+root-package: github.com/crossplane-contrib/provider-terraform-vsphere
+package-path: github.com/crossplane-contrib/provider-terraform-vsphere/generated/resources
+base-path: /Users/kasey/src/crossplane-contrib/provider-terraform-vsphere/
+provider-config-version: v1alpha1
+api-group: vsphere.terraform-plugin.crossplane.io
+exclude-resources:
+ - vsphere_virtual_machine
+ - vsphere_vm_storage_policy
+ - vsphere_vnic
+ - vsphere_compute_cluster
+ - vsphere_content_library
+ - vsphere_distributed_port_group
+ - vsphere_distributed_virtual_switch
+ - vsphere_entity_permissions
+ - vsphere_entity_permissions
+ - vsphere_host_port_group
+ - vsphere_host_port_group
