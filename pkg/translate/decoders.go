@@ -242,7 +242,7 @@ var containerCollectionSingletonTypeDecodeTemplate = `//containerCollectionSingl
 func {{.FuncName}}(p *{{.ParentType}}, vals map[string]cty.Value) {
 	v := {{.CollectionConversionFunc}}(vals["{{.TerraformFieldName}}"])
 	valMap := v[0]
-{{.GenerateChildrenDecodeFuncCalls 1 "f"}}
+{{.GenerateChildrenDecodeFuncCalls 1 "p"}}
 }`
 
 var decodeManagedResourceEntrypointTemplate = `type ctyDecoder struct{}
