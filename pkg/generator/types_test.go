@@ -146,7 +146,7 @@ func TestSpec(t *testing.T) {
 	mr := DefaultTestResource()
 	expected := "// A TestSpec defines the desired state of a Test\n" +
 		"type TestSpec struct {\n" +
-		"	runtimev1alpha1.ResourceSpec `json:\",inline\"`\n" +
+		"	xpv1.ResourceSpec `json:\",inline\"`\n" +
 		"	ForProvider                  TestParameters `json:\",inline\"`\n" +
 		"}"
 	actual := SpecFragment(mr).Render()
@@ -159,7 +159,7 @@ func TestStatus(t *testing.T) {
 	mr := DefaultTestResource()
 	expected := "// A TestStatus defines the observed state of a Test\n" +
 		"type TestStatus struct {\n" +
-		"	runtimev1alpha1.ResourceStatus `json:\",inline\"`\n" +
+		"	xpv1.ResourceStatus `json:\",inline\"`\n" +
 		"	AtProvider                     TestObservation `json:\",inline\"`\n" +
 		"}"
 	actual := StatusFragment(mr).Render()

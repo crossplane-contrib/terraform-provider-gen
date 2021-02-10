@@ -72,7 +72,7 @@ func TypeListFragment(mr *ManagedResource) *Fragment {
 func SpecFragment(mr *ManagedResource) *Fragment {
 	namer := mr.Namer()
 	stmt := j.Type().Id(namer.SpecTypeName()).Struct(
-		j.Qual("runtimev1alpha1", "ResourceSpec").Tag(map[string]string{"json": ",inline"}),
+		j.Qual("xpv1", "ResourceSpec").Tag(map[string]string{"json": ",inline"}),
 		j.Id("ForProvider").Qual("", namer.ForProviderTypeName()).Tag(map[string]string{"json": "forProvider"}),
 	)
 	comment := fmt.Sprintf("A %s defines the desired state of a %s", namer.SpecTypeName(), namer.TypeName())
@@ -99,7 +99,7 @@ func ForProviderFragments(mr *ManagedResource) []*Fragment {
 func StatusFragment(mr *ManagedResource) *Fragment {
 	namer := mr.Namer()
 	stmt := j.Type().Id(namer.StatusTypeName()).Struct(
-		j.Qual("runtimev1alpha1", "ResourceStatus").Tag(map[string]string{"json": ",inline"}),
+		j.Qual("xpv1", "ResourceStatus").Tag(map[string]string{"json": ",inline"}),
 		j.Id("AtProvider").Qual("", namer.AtProviderTypeName()).Tag(map[string]string{"json": "atProvider"}),
 	)
 	comment := fmt.Sprintf("A %s defines the observed state of a %s", namer.StatusTypeName(), namer.TypeName())

@@ -19,7 +19,7 @@ package v1alpha1
 import (
 	"context"
 	"fmt"
-	runtimev1alpha1 "github.com/crossplane/crossplane-runtime/apis/core/v1alpha1"
+	xpv1 "github.com/crossplane/crossplane-runtime/apis/common/v1"
 	corev1 "k8s.io/api/core/v1"
 	"reflect"
 
@@ -125,7 +125,7 @@ func readCredentials(ctx context.Context, kube kubeclient.Client, mr resource.Ma
 		return nil, err
 	}
 
-	if s := pc.Spec.Credentials.Source; s != runtimev1alpha1.CredentialsSourceSecret {
+	if s := pc.Spec.Credentials.Source; s != xpv1.CredentialsSourceSecret {
 		return nil, errors.Errorf("unsupported credentials source %q", s)
 	}
 

@@ -19,7 +19,7 @@ package v1alpha1
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	runtimev1alpha1 "github.com/crossplane/crossplane-runtime/apis/core/v1alpha1"
+	xpv1 "github.com/crossplane/crossplane-runtime/apis/common/v1"
 )
 
 
@@ -28,7 +28,7 @@ import (
 
 // A ProviderConfigSpec defines the desired state of a ProviderConfig.
 type ProviderConfigSpec struct {
-	runtimev1alpha1.ProviderConfigSpec `json:",inline"`
+	xpv1.ProviderConfigSpec `json:",inline"`
 	ApiTimeout int64 `json:"api_timeout"`
 	RestSessionPath string `json:"rest_session_path"`
 	VcenterServer string `json:"vcenter_server"`
@@ -48,7 +48,7 @@ type ProviderConfigSpec struct {
 
 // A ProviderConfigStatus represents the status of a ProviderConfig.
 type ProviderConfigStatus struct {
-	runtimev1alpha1.ProviderConfigStatus `json:",inline"`
+	xpv1.ProviderConfigStatus `json:",inline"`
 }
 
 // +kubebuilder:object:root=true
@@ -87,7 +87,7 @@ type ProviderConfigUsage struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	runtimev1alpha1.ProviderConfigUsage `json:",inline"`
+	xpv1.ProviderConfigUsage `json:",inline"`
 }
 
 // +kubebuilder:object:root=true
