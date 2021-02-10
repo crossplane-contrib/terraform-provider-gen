@@ -18,6 +18,9 @@ package v1alpha1
 
 import (
 	"context"
+	"fmt"
+	runtimev1alpha1 "github.com/crossplane/crossplane-runtime/apis/core/v1alpha1"
+	corev1 "k8s.io/api/core/v1"
 	"reflect"
 
 	"github.com/crossplane-contrib/terraform-runtime/pkg/client"
@@ -33,12 +36,12 @@ import (
 
 // Package type metadata.
 const (
-	Group                         = "aws.terraform-plugin.crossplane.io"
+	Group                         = "vsphere.terraform-plugin.crossplane.io"
 	Version                       = "v1alpha1"
 	errProviderNotRetrieved       = "provider could not be retrieved"
 	errProviderSecretNotRetrieved = "secret referred in provider could not be retrieved"
 	errProviderSecretNil          = "cannot find Secret reference on Provider"
-	ProviderName                  = "aws"
+	ProviderName                  = "vsphere"
 )
 
 var (
@@ -64,7 +67,11 @@ func initializeProvider(ctx context.Context, mr resource.Managed, ropts *client.
 
 	//creds, err := providerConfigCredentials(ctx, kube, pc)
 	//cfg := populateConfig(pc, creds)
-	cfg := populateConfig(pc)
+	up, err := readCredentials(ctx, kube, mr)
+	if err != nil {
+		return nil, errors.Wrap(err, "cannot read credentials from ProviderConfig")
+	}
+	cfg := populateConfig(pc, up)
 
 	p, err := client.NewProvider(ProviderName, ropts.PluginPath)
 	if err != nil {
@@ -74,7 +81,7 @@ func initializeProvider(ctx context.Context, mr resource.Managed, ropts *client.
 	return p, err
 }
 
-func populateConfig(p *ProviderConfig) cty.Value {
+func populateConfig(p *ProviderConfig, up *UserPass) cty.Value {
 	merged := make(map[string]cty.Value)
 	merged["api_timeout"] = cty.NumberIntVal(p.Spec.ApiTimeout)
 	merged["rest_session_path"] = cty.StringVal(p.Spec.RestSessionPath)
@@ -84,13 +91,18 @@ func populateConfig(p *ProviderConfig) cty.Value {
 	merged["client_debug"] = cty.BoolVal(p.Spec.ClientDebug)
 	merged["client_debug_path"] = cty.StringVal(p.Spec.ClientDebugPath)
 	merged["client_debug_path_run"] = cty.StringVal(p.Spec.ClientDebugPathRun)
-	merged["password"] = cty.StringVal(p.Spec.Password)
 	merged["persist_session"] = cty.BoolVal(p.Spec.PersistSession)
-	merged["user"] = cty.StringVal(p.Spec.User)
 	merged["vim_session_path"] = cty.StringVal(p.Spec.VimSessionPath)
 	merged["vsphere_server"] = cty.StringVal(p.Spec.VsphereServer)
 
+	merged["user"] = cty.StringVal(up.User)
+	merged["password"] = cty.StringVal(up.Pass)
 	return cty.ObjectVal(merged)
+}
+
+type UserPass struct {
+	User string `json:"user"`
+	Pass string `json:"pass"`
 }
 
 func GetProviderInit() *plugin.ProviderInit {
@@ -103,25 +115,51 @@ func GetProviderInit() *plugin.ProviderInit {
 	}
 }
 
-/*
-func providerConfigCredentials(ctx context.Context, c kubeclient.Client, pc *ProviderConfig) (aws.Credentials, error) {
-	switch s := pc.Spec.Credentials.Source; s { //nolint:exhaustive
-	case runtimev1alpha1.CredentialsSourceSecret:
-		csr := pc.Spec.Credentials.SecretRef
-		if csr == nil {
-			return aws.Credentials{}, errors.New("no credentials secret referenced")
-		}
-		s := &corev1.Secret{}
-		if err := c.Get(ctx, types.NamespacedName{Namespace: csr.Namespace, Name: csr.Name}, s); err != nil {
-			return aws.Credentials{}, errors.Wrap(err, "cannot get credentials secret")
-		}
-		creds, err := xpaws.CredentialsIDSecret(s.Data[csr.Key], xpaws.DefaultSection)
-		if err != nil {
-			return aws.Credentials{}, errors.Wrap(err, "cannot parse credentials secret")
-		}
-		return creds, nil
-	default:
-		return aws.Credentials{}, errors.Errorf("credentials source %s is not currently supported", s)
+func readCredentials(ctx context.Context, kube kubeclient.Client, mr resource.Managed) (*UserPass, error) {
+	pc := &ProviderConfig{}
+	t := resource.NewProviderConfigUsageTracker(kube, &ProviderConfigUsage{})
+	if err := t.Track(ctx, mr); err != nil {
+		return nil, err
 	}
+	if err := kube.Get(ctx, types.NamespacedName{Name: mr.GetProviderConfigReference().Name}, pc); err != nil {
+		return nil, err
+	}
+
+	if s := pc.Spec.Credentials.Source; s != runtimev1alpha1.CredentialsSourceSecret {
+		return nil, errors.Errorf("unsupported credentials source %q", s)
+	}
+
+	ref := pc.Spec.Credentials.SecretRef
+	if ref == nil {
+		return nil, errors.New("no credentials secret reference was provided")
+	}
+
+	s := &corev1.Secret{}
+	if err := kube.Get(ctx, types.NamespacedName{Name: ref.Name, Namespace: ref.Namespace}, s); err != nil {
+		return nil, err
+	}
+
+	return userPassFromSecret(s)
 }
-*/
+
+func userPassFromSecret(s *corev1.Secret) (*UserPass, error) {
+	if s.Type != corev1.SecretTypeBasicAuth {
+		basicAuthUrl := "https://kubernetes.io/docs/concepts/configuration/secret/#basic-authentication-secret"
+		return nil, fmt.Errorf("expected key to be of type %s -- see %s", corev1.SecretTypeBasicAuth, basicAuthUrl)
+	}
+
+	// we can assume these fields exist because k8s api guarantees them based on the .Type
+	// but we need to check their length because k8s api only requires one of them to be non-zero
+	username := s.Data[corev1.BasicAuthUsernameKey]
+	if len(username) == 0 {
+		return nil, errors.New("username field of basic-auth provider credential secret is empty")
+	}
+	password := s.Data[corev1.BasicAuthPasswordKey]
+	if len(username) == 0 {
+		return nil, errors.New("password field of basic-auth provider credential secret is empty")
+	}
+	return &UserPass{
+		User: string(username),
+		Pass: string(password),
+	}, nil
+}
