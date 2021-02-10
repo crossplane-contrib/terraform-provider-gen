@@ -67,7 +67,7 @@ func (bt *backTracker) GenerateMergeFn(funcPrefix, receivedType string, f genera
 		return renderPrimitiveTypeMerger(efr, mergePrimitiveTemplateName, spec)
 	case f.Type == generator.FieldTypeStruct:
 		if f.IsSlice {
-			return renderContainerTypeMerger(efr, mergeStructTemplateName, spec)
+			return renderContainerTypeMerger(efr, mergeStructSliceTemplateName, spec)
 		}
 		return renderContainerTypeMerger(efr, mergeStructTemplateName, spec)
 	default:
@@ -274,17 +274,19 @@ func {{.FuncName}}(k *{{.ParentType}}, p *{{.ParentType}}, md *plugin.MergeDescr
 }`
 
 var mergeStructSliceTemplateStatus = `//mergeStructSliceTemplateStatus
-func {{.FuncName}}(ks *[]{{.ParentType}}, ps *[]{{.ParentType}}, md *plugin.MergeDescription) {
+func {{.FuncName}}(ksp *[]{{.ParentType}}, psp *[]{{.ParentType}}, md *plugin.MergeDescription) bool {
+	ks := *ksp
+	ps := *psp
 	if len(ks) != len(ps) {
 		ks = ps
 		md.NeedsProviderUpdate = true
 		return true
 	}
 	anyChildUpdated := false
-	for i, _ := range p {
-		childUpdated := false
-		k := ks[i]
-		p := ps[i]
+	for i, _ := range ps {
+		updated := false
+		k := &ks[i]
+		p := &ps[i]
 {{.GenerateChildrenMergeFuncCalls 2 false}}
 	}
 	if anyChildUpdated {
@@ -294,17 +296,19 @@ func {{.FuncName}}(ks *[]{{.ParentType}}, ps *[]{{.ParentType}}, md *plugin.Merg
 }`
 
 var mergeStructSliceTemplateSpec = `//mergeStructSliceTemplateSpec
-func {{.FuncName}}(ks *[]{{.ParentType}}, ps *[]{{.ParentType}}, md *plugin.MergeDescription) {
+func {{.FuncName}}(ksp *[]{{.ParentType}}, psp *[]{{.ParentType}}, md *plugin.MergeDescription) bool {
+	ks := *ksp
+	ps := *psp
 	if len(ks) != len(ps) {
 		ps = ks
 		md.NeedsProviderUpdate = true
 		return true
 	}
 	anyChildUpdated := false
-	for i, _ := range p {
+	for i, _ := range ps {
 		childUpdated := false
-		k := ks[i]
-		p := ps[i]
+		k := &ks[i]
+		p := &ps[i]
 {{.GenerateChildrenMergeFuncCalls 2 true }}
 	}
 	if anyChildUpdated {
