@@ -13,7 +13,3 @@ exclude-resources:
  - vsphere_content_library
  - vsphere_distributed_port_group
  - vsphere_distributed_virtual_switch
- - vsphere_entity_permissions
- - vsphere_entity_permissions
- - vsphere_host_port_group
- - vsphere_host_port_group

@@ -221,27 +221,67 @@ func {{.FuncName}}(p *{{.ParentType}}, vals map[string]cty.Value) {
 {{.GenerateChildrenDecodeFuncCalls 1 "p"}}
 }`
 
-// TODO: the collection types are busted
-// nesting works a little differently from encode, so these need to a bigger rewrite
-// TODO: convert to decode
-var containerCollectionTypeDecodeTemplate = `//containerCollectionTypeDecodeTemplate
-func {{.FuncName}}(p *[]{{.ParentType}}, vals map[string]cty.Value) {
-	valsForCollection := make([]cty.Value, 0)
-	for _, v := range p {
-		ctyVal := make(map[string]cty.Value)
-{{.GenerateChildrenDecodeFuncCalls 2 "v"}}
-		valsForCollection = append(valsForCollection, {{.ConversionFunc}}(ctyVal))
+
+/*
+// example containerCollectionTypeDecodeTemplate output
+func DecodeHostPortGroup_Ports(pp *[]Ports, vals map[string]cty.Value) {
+	if vals["ports"].IsNull() {
+		pp = nil
+		return
 	}
-	vals["{{.TerraformFieldName}}"] = {{.CollectionConversionFunc}}(valsForCollection)
+	rvals := ctwhy.ValueAsList(vals["ports"])
+	if len(rvals) == 0 {
+		pp = nil
+		return
+	}
+	lval := make([]Ports, 0)
+	for _, value := range rvals {
+		valMap := value.AsValueMap()
+		vi := Ports{}
+		DecodeHostPortGroup_Ports_Key(&vi, valMap)
+		DecodeHostPortGroup_Ports_MacAddresses(&vi, valMap)
+		DecodeHostPortGroup_Ports_Type(&vi, valMap)
+		lval = append(lval, vi)
+	}
+	pp = &lval
+}
+ */
+
+var containerCollectionTypeDecodeTemplate = `//containerCollectionTypeDecodeTemplate
+func {{.FuncName}}(pp *[]{{.ParentType}}, vals map[string]cty.Value) {
+    if vals["{{.TerraformFieldName}}"].IsNull() {
+		pp = nil
+		return
+	}
+	rvals := ctwhy.ValueAsList(vals["{{.TerraformFieldName}}"])
+	if len(rvals) == 0 {
+		pp = nil
+		return
+	}
+	lval := make([]{{.ParentType}}, 0)
+	for _, value := range rvals {
+		valMap := value.AsValueMap()
+		vi := &{{.ParentType}}{}
+{{.GenerateChildrenDecodeFuncCalls 2 "vi"}}
+		lval = append(lval, *vi)
+	}
+	pp = &lval
 }`
 
-// TODO: the collection types are busted
-// nesting works a little differently from encode, so these need to a bigger rewrite
-// TODO: convert to decode
 var containerCollectionSingletonTypeDecodeTemplate = `//containerCollectionSingletonTypeDecodeTemplate
 func {{.FuncName}}(p *{{.ParentType}}, vals map[string]cty.Value) {
-	v := {{.CollectionConversionFunc}}(vals["{{.TerraformFieldName}}"])
-	valMap := v[0]
+	if vals["{{.TerraformFieldName}}"].IsNull() {
+		p = nil
+		return
+	}
+	rvals := {{.CollectionConversionFunc}}(vals["{{.TerraformFieldName}}"])
+	if len(rvals) == 0 {
+		p = nil
+		return
+	}
+	// this template should be used when single dictionary/object values are nested in sets/lists
+	// if rvals turns out to be a list with > 1 elements, something has broken with that heuristic
+	valMap := rvals[0].AsValueMap()
 {{.GenerateChildrenDecodeFuncCalls 1 "p"}}
 }`
 

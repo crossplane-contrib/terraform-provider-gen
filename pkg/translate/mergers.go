@@ -306,7 +306,7 @@ func {{.FuncName}}(ksp *[]{{.ParentType}}, psp *[]{{.ParentType}}, md *plugin.Me
 	}
 	anyChildUpdated := false
 	for i, _ := range ps {
-		childUpdated := false
+		updated := false
 		k := &ks[i]
 		p := &ps[i]
 {{.GenerateChildrenMergeFuncCalls 2 true }}
