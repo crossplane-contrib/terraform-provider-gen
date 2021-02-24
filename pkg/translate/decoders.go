@@ -21,7 +21,6 @@ const containerCollectionSingletonTypeDecodeTemplateName = "containerCollectionS
 const managedResourceDecodeTemplate = "managedResource"
 
 func NewBlockDecodeFnGenerator(terraformName string, block *configschema.NestedBlock) generator.DecodeFnGenerator {
-	//ctyType cty.Type, collectionType *cty.Type)
 	var colType *cty.Type
 	switch block.Nesting {
 	case configschema.NestingSingle, configschema.NestingGroup:
@@ -123,9 +122,9 @@ func renderContainerTypeDecoder(efr *decodeFnRenderer, template string) string {
 
 	rendered := []string{b.String()}
 	for _, child := range efr.Children {
-		receivedType := efr.StructFieldName
+		receivedType := efr.ParentType
 		if child.Type == generator.FieldTypeStruct {
-			receivedType = child.Name
+			receivedType = child.StructField.TypeName
 		}
 		rendered = append(rendered, child.DecodeFnGenerator.GenerateDecodeFn(efr.FuncName, receivedType, child))
 	}
@@ -163,23 +162,32 @@ func (efr *decodeFnRenderer) CollectionConversionFunc() string {
 // TODO: convert to decode style
 func (efr decodeFnRenderer) GenerateChildrenDecodeFuncCalls(indentLevels int, attr string) string {
 	indent := indentLevelString(indentLevels)
-	return generateChildrenDecodeFuncCalls(indent, efr.FuncName, attr, efr.Children)
+	return generateChildrenDecodeFuncCalls(indent, efr.FuncName, attr, efr.Children, false)
 }
 
 func (efr *decodeFnRenderer) PrimitiveFieldType() string {
 	return generator.AttributeTypeDeclaration(efr.Field)
 }
 
-// TODO: convert to decode style
-func generateChildrenDecodeFuncCalls(indent, funcName string, attr string, children []generator.Field) string {
+// TODO: this needs a better design, the attrRefs hack is shameful
+// the issue is that we always receive pointers to nested functions, so in the case of a simple attribute where we pass
+// down the pointer, we can pass it along directly to the receiver which already wants a pointer. when the child is a struct
+// we want to pass down a reference to the struct instead. but there is a special case in the top-level merge entrypoint
+// function where we want to pass down a reference to a nested struct member, kind of like when the child is a struct,
+// which is why we have the attrRefs hack -- we need to pass these attributes down as refs because they aren't already
+// this could be fixed by rewriting the entrypoint
+func generateChildrenDecodeFuncCalls(indent, funcName string, attr string, children []generator.Field, attrRefs bool) string {
 	lines := make([]string, 0)
 	for _, child := range children {
 		if child.Type == generator.FieldTypeAttribute {
 			l := fmt.Sprintf("%s%s_%s(%s, valMap)", indent, funcName, child.Name, attr)
+			if attrRefs {
+				l = fmt.Sprintf("%s%s_%s(&%s, valMap)", indent, funcName, child.Name, attr)
+			}
 			lines = append(lines, l)
 		}
 		if child.Type == generator.FieldTypeStruct {
-			l := fmt.Sprintf("%s%s_%s(%s, valMap)", indent, funcName, child.Name, fmt.Sprintf("%s.%s", attr, child.Name))
+			l := fmt.Sprintf("%s%s_%s(%s, valMap)", indent, funcName, child.Name, fmt.Sprintf("&%s.%s", attr, child.Name))
 			lines = append(lines, l)
 		}
 	}
@@ -221,7 +229,6 @@ func {{.FuncName}}(p *{{.ParentType}}, vals map[string]cty.Value) {
 {{.GenerateChildrenDecodeFuncCalls 1 "p"}}
 }`
 
-
 /*
 // example containerCollectionTypeDecodeTemplate output
 func DecodeHostPortGroup_Ports(pp *[]Ports, vals map[string]cty.Value) {
@@ -245,7 +252,7 @@ func DecodeHostPortGroup_Ports(pp *[]Ports, vals map[string]cty.Value) {
 	}
 	pp = &lval
 }
- */
+*/
 
 var containerCollectionTypeDecodeTemplate = `//containerCollectionTypeDecodeTemplate
 func {{.FuncName}}(pp *[]{{.ParentType}}, vals map[string]cty.Value) {
@@ -331,8 +338,8 @@ func GenerateDecoders(mr *generator.ManagedResource, tg tpl.TemplateGetter) (str
 	}
 
 	// TODO: convert forProviderCalls/atProviderCalls to pass values correctly
-	forProviderCalls := generateChildrenDecodeFuncCalls("\t", funcName, "&new.Spec.ForProvider", forProvider.Fields)
-	atProviderCalls := generateChildrenDecodeFuncCalls("\t", funcName, "&new.Status.AtProvider", atProvider.Fields)
+	forProviderCalls := generateChildrenDecodeFuncCalls("\t", funcName, "new.Spec.ForProvider", forProvider.Fields, true)
+	atProviderCalls := generateChildrenDecodeFuncCalls("\t", funcName, "new.Status.AtProvider", atProvider.Fields, true)
 
 	b := bytes.NewBuffer(make([]byte, 0))
 	decoderTemplates[managedResourceTemplate].Execute(b, struct {
@@ -351,7 +358,7 @@ func GenerateDecoders(mr *generator.ManagedResource, tg tpl.TemplateGetter) (str
 		for _, child := range field.Fields {
 			receivedType := field.Name
 			if child.Type == generator.FieldTypeStruct {
-				receivedType = child.Name
+				receivedType = child.StructField.TypeName
 			}
 			rendered = append(rendered, child.DecodeFnGenerator.GenerateDecodeFn(funcName, receivedType, child))
 		}

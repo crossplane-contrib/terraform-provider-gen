@@ -5,5 +5,3 @@ package-path: github.com/crossplane-contrib/provider-terraform-vsphere/generated
 base-path: /Users/kasey/src/crossplane-contrib/provider-terraform-vsphere/
 provider-config-version: v1alpha1
 api-group: vsphere.terraform-plugin.crossplane.io
-exclude-resources:
- - vsphere_virtual_machine

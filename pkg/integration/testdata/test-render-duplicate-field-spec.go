@@ -52,19 +52,37 @@ type TestSpec struct {
 
 // A TestParameters defines the desired state of a Test
 type TestParameters struct {
-	SubParametersName SubParameters
+	outerName outer
 }
 
-type SubParameters struct {
-	nestedFieldName nestedField `json:"sub_field"`
+type outer struct {
+	middleOneName middleOne
+	middleTwoName middleTwo
+	middleTwoName middleTwo0
 }
 
-type nestedField struct {
-	deeplyNestedFieldName deeplyNestedField `json:"deeper_sub_field"`
+type middleOne struct {
+	duplicatorName duplicator
 }
 
-type deeplyNestedField struct {
+type duplicator struct {
 	aString string `json:"a_string"`
+}
+
+type middleTwo struct {
+	duplicatorName duplicator0
+}
+
+type duplicator0 struct {
+	aString string `json:"a_string"`
+}
+
+type middleTwo0 struct {
+	duplicatorName duplicator1
+}
+
+type duplicator1 struct {
+	bString string `json:"b_string"`
 }
 
 // A TestStatus defines the observed state of a Test

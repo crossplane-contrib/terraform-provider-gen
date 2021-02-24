@@ -119,9 +119,9 @@ func renderContainerTypeMerger(efr *mergeFnRenderer, template string, isSpec boo
 
 	rendered := []string{b.String()}
 	for _, child := range efr.Children {
-		receivedType := efr.StructFieldName
+		receivedType := efr.ParentType
 		if child.Type == generator.FieldTypeStruct {
-			receivedType = child.Name
+			receivedType = child.StructField.TypeName
 		}
 		rendered = append(rendered, child.MergeFnGenerator.GenerateMergeFn(efr.FuncName, receivedType, child, isSpec))
 	}
@@ -152,18 +152,28 @@ func renderUpdatedHandling(call, indent string) string {
 
 func (efr mergeFnRenderer) GenerateChildrenMergeFuncCalls(indentLevels int, isSpec bool) string {
 	indent := indentLevelString(indentLevels)
-	return generateChildrenMergeFuncCalls(indent, efr.FuncName, efr.Children, isSpec, "k", "p")
+	return generateChildrenMergeFuncCalls(indent, efr.FuncName, efr.Children, isSpec, "k", "p", false)
 }
 
-func generateChildrenMergeFuncCalls(indent, funcName string, children []generator.Field, isSpec bool, leftAttr string, rightAttr string) string {
+// TODO: this needs a better design, the attrRefs hack is shameful
+// the issue is that we always receive pointers to nested functions, so in the case of a simple attribute where we pass
+// down the pointer, we can pass it along directly to the receiver which already wants a pointer. when the child is a struct
+// we want to pass down a reference to the struct instead. but there is a special case in the top-level merge entrypoint
+// function where we want to pass down a reference to a nested struct member, kind of like when the child is a struct,
+// which is why we have the attrRefs hack -- we need to pass these attributes down as refs because they aren't already
+// this could be fixed by rewriting the entrypoint
+func generateChildrenMergeFuncCalls(indent, funcName string, children []generator.Field, isSpec bool, leftAttr string, rightAttr string, attrRefs bool) string {
 	lines := make([]string, 0)
 	for _, child := range children {
 		if child.Type == generator.FieldTypeAttribute {
 			l := fmt.Sprintf("%supdated = %s_%s(%s, %s, md)", indent, funcName, child.Name, leftAttr, rightAttr)
+			if attrRefs {
+				l = fmt.Sprintf("%supdated = %s_%s(&%s, &%s, md)", indent, funcName, child.Name, leftAttr, rightAttr)
+			}
 			lines = append(lines, renderUpdatedHandling(l, indent))
 		}
 		if child.Type == generator.FieldTypeStruct {
-			l := fmt.Sprintf("%supdated = %s_%s(%s.%s, %s.%s, md)", indent, funcName, child.Name, leftAttr, child.Name, rightAttr, child.Name)
+			l := fmt.Sprintf("%supdated = %s_%s(&%s.%s, &%s.%s, md)", indent, funcName, child.Name, leftAttr, child.Name, rightAttr, child.Name)
 			lines = append(lines, renderUpdatedHandling(l, indent))
 		}
 	}
@@ -366,8 +376,8 @@ func GenerateMergers(mr *generator.ManagedResource, tg tpl.TemplateGetter) (stri
 		return "", err
 	}
 
-	forProviderCalls := generateChildrenMergeFuncCalls("\t", funcName, forProvider.Fields, true, "&k.Spec.ForProvider", "&p.Spec.ForProvider")
-	atProviderCalls := generateChildrenMergeFuncCalls("\t", funcName, atProvider.Fields, false, "&k.Status.AtProvider", "&p.Status.AtProvider")
+	forProviderCalls := generateChildrenMergeFuncCalls("\t", funcName, forProvider.Fields, true, "k.Spec.ForProvider", "p.Spec.ForProvider", true)
+	atProviderCalls := generateChildrenMergeFuncCalls("\t", funcName, atProvider.Fields, false, "k.Status.AtProvider", "p.Status.AtProvider", true)
 
 	b := bytes.NewBuffer(make([]byte, 0))
 	tmpl := template.Must(template.New("mrtpl").Parse(mergeManagedResourceEntrypointTemplate))
@@ -385,7 +395,7 @@ func GenerateMergers(mr *generator.ManagedResource, tg tpl.TemplateGetter) (stri
 		for _, child := range field.Fields {
 			receivedType := field.Name
 			if child.Type == generator.FieldTypeStruct {
-				receivedType = child.Name
+				receivedType = child.StructField.TypeName
 			}
 			rendered = append(rendered, child.MergeFnGenerator.GenerateMergeFn(funcName, receivedType, child, true))
 		}
@@ -394,7 +404,7 @@ func GenerateMergers(mr *generator.ManagedResource, tg tpl.TemplateGetter) (stri
 		for _, child := range field.Fields {
 			receivedType := field.Name
 			if child.Type == generator.FieldTypeStruct {
-				receivedType = child.Name
+				receivedType = child.StructField.TypeName
 			}
 			rendered = append(rendered, child.MergeFnGenerator.GenerateMergeFn(funcName, receivedType, child, false))
 		}

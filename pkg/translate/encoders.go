@@ -123,9 +123,9 @@ func renderContainerType(efr *encodeFnRenderer, template string) string {
 
 	rendered := []string{b.String()}
 	for _, child := range efr.Children {
-		receivedType := efr.StructFieldName
+		receivedType := efr.ParentType
 		if child.Type == generator.FieldTypeStruct {
-			receivedType = child.Name
+			receivedType = child.StructField.TypeName
 		}
 		rendered = append(rendered, child.EncodeFnGenerator.GenerateEncodeFn(efr.FuncName, receivedType, child))
 	}
@@ -323,7 +323,7 @@ func GenerateEncoders(mr *generator.ManagedResource, tg tpl.TemplateGetter) (str
 		for _, child := range field.Fields {
 			receivedType := field.Name
 			if child.Type == generator.FieldTypeStruct {
-				receivedType = child.Name
+				receivedType = child.StructField.TypeName
 			}
 			rendered = append(rendered, child.EncodeFnGenerator.GenerateEncodeFn(funcName, receivedType, child))
 		}

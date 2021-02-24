@@ -19,7 +19,7 @@ package v1alpha1
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	runtimev1alpha1 "github.com/crossplane/crossplane-runtime/apis/core/v1alpha1"
+	xpv1 "github.com/crossplane/crossplane-runtime/apis/common/v1"
 )
 
 // +kubebuilder:object:root=true
@@ -46,21 +46,23 @@ type TestResourceList struct {
 
 // A TestResourceSpec defines the desired state of a TestResource
 type TestResourceSpec struct {
-	runtimev1alpha1.ResourceSpec `json:",inline"`
-	ForProvider                  TestResourceParameters `json:",inline"`
+	xpv1.ResourceSpec `json:",inline"`
+	ForProvider       TestResourceParameters `json:"forProvider"`
 }
 
 // A TestResourceParameters defines the desired state of a TestResource
 type TestResourceParameters struct {
-	RequiredName           string `json:"required_name"`
-	DifferentResourceRefId string `json:"different_resource_ref_id"`
-	PerformOptionalAction  bool   `json:"perform_optional_action"`
+	Labels                 map[string]string `json:"labels,omitempty"`
+	NumberList             []int64           `json:"number_list,omitempty"`
+	RequiredName           string            `json:"required_name"`
+	DifferentResourceRefId string            `json:"different_resource_ref_id"`
+	PerformOptionalAction  bool              `json:"perform_optional_action"`
 }
 
 // A TestResourceStatus defines the observed state of a TestResource
 type TestResourceStatus struct {
-	runtimev1alpha1.ResourceStatus `json:",inline"`
-	AtProvider                     TestResourceObservation `json:",inline"`
+	xpv1.ResourceStatus `json:",inline"`
+	AtProvider          TestResourceObservation `json:"atProvider"`
 }
 
 // A TestResourceObservation records the observed state of a TestResource

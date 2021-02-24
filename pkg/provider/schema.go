@@ -3,6 +3,7 @@ package provider
 import (
 	"bytes"
 	"fmt"
+	"github.com/crossplane-contrib/terraform-provider-gen/pkg/optimize"
 	"io"
 	"os"
 	"path"
@@ -41,6 +42,10 @@ func (st *SchemaTranslator) WriteAllGeneratedResourceFiles() error {
 			return err
 		}
 		mr := translate.SchemaToManagedResource(pt.namer.ManagedResourceName(), pt.cfg.PackagePath, pt.resourceSchema)
+		mr, err = optimize.Deduplicate(mr)
+		if err != nil {
+			return err
+		}
 		err = pt.WriteTypeDefFile(mr)
 		if err != nil {
 			return err
@@ -86,11 +91,11 @@ func (st *SchemaTranslator) writeResourceImplementationIndex(pis []PackageImport
 		return err
 	}
 	buf := new(bytes.Buffer)
-	values := struct{
+	values := struct {
 		Config
 		PackageImports []PackageImport
 	}{
-		Config: st.cfg,
+		Config:         st.cfg,
 		PackageImports: pis,
 	}
 	err = tpl.Execute(buf, values)

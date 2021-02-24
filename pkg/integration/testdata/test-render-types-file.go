@@ -19,7 +19,7 @@ package v1alpha1
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	runtimev1alpha1 "github.com/crossplane/crossplane-runtime/apis/core/v1alpha1"
+	xpv1 "github.com/crossplane/crossplane-runtime/apis/common/v1"
 )
 
 // +kubebuilder:object:root=true
@@ -46,8 +46,8 @@ type TestList struct {
 
 // A TestSpec defines the desired state of a Test
 type TestSpec struct {
-	runtimev1alpha1.ResourceSpec `json:",inline"`
-	ForProvider                  TestParameters `json:",inline"`
+	xpv1.ResourceSpec `json:",inline"`
+	ForProvider       TestParameters `json:"forProvider"`
 }
 
 // A TestParameters defines the desired state of a Test
@@ -55,8 +55,8 @@ type TestParameters struct{}
 
 // A TestStatus defines the observed state of a Test
 type TestStatus struct {
-	runtimev1alpha1.ResourceStatus `json:",inline"`
-	AtProvider                     TestObservation `json:",inline"`
+	xpv1.ResourceStatus `json:",inline"`
+	AtProvider          TestObservation `json:"atProvider"`
 }
 
 // A TestObservation records the observed state of a Test

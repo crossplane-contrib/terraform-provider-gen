@@ -2,12 +2,12 @@ package translate
 
 import (
 	"fmt"
-
 	"github.com/crossplane-contrib/terraform-provider-gen/pkg/generator"
 	"github.com/hashicorp/terraform/configs/configschema"
 	"github.com/hashicorp/terraform/providers"
 	"github.com/iancoleman/strcase"
 	"github.com/zclconf/go-cty/cty"
+	"sort"
 )
 
 type SpecOrStatusField int
@@ -45,8 +45,8 @@ func NewFieldBuilder(name string, ctyType cty.Type) *FieldBuilder {
 	}
 	return &FieldBuilder{
 		f: &generator.Field{
-			Name: strcase.ToCamel(name),
-			Tag: st,
+			Name:              strcase.ToCamel(name),
+			Tag:               st,
 			EncodeFnGenerator: encFnGen,
 			DecodeFnGenerator: decFnGen,
 			MergeFnGenerator:  mergeFnGen,
@@ -216,6 +216,8 @@ func SpecOrStatusAttributeFields(attributes map[string]*configschema.Attribute, 
 			atProvider = append(atProvider, f)
 		}
 	}
+	sort.Sort(generator.NamedFields(forProvider))
+	sort.Sort(generator.NamedFields(atProvider))
 	return forProvider, atProvider
 }
 
@@ -256,6 +258,7 @@ func NestedBlockFields(blocks map[string]*configschema.NestedBlock, packagePath,
 		f.Fields = append(f.Fields, NestedBlockFields(block.BlockTypes, packagePath, sp)...)
 		fields = append(fields, f)
 	}
+	sort.Sort(generator.NamedFields(fields))
 	return fields
 }
 
