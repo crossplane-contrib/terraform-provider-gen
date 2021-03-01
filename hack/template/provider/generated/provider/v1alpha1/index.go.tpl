@@ -65,13 +65,11 @@ func initializeProvider(ctx context.Context, mr resource.Managed, ropts *client.
 		return nil, errors.Wrap(err, "cannot track ProviderConfig usage")
 	}
 
-	//creds, err := providerConfigCredentials(ctx, kube, pc)
-	//cfg := populateConfig(pc, creds)
-	up, err := readCredentials(ctx, kube, mr)
+	pass, err := readPassword(ctx, kube, pc)
 	if err != nil {
-		return nil, errors.Wrap(err, "cannot read credentials from ProviderConfig")
+		return nil, errors.Wrap(err, "cannot read credentials for ProviderConfig")
 	}
-	cfg := populateConfig(pc, up)
+	cfg := populateConfig(pc, pass)
 
 	p, err := client.NewProvider(ProviderName, ropts.PluginPath)
 	if err != nil {
@@ -81,7 +79,7 @@ func initializeProvider(ctx context.Context, mr resource.Managed, ropts *client.
 	return p, err
 }
 
-func populateConfig(p *ProviderConfig, up *UserPass) cty.Value {
+func populateConfig(p *ProviderConfig, password string) cty.Value {
 	merged := make(map[string]cty.Value)
 	merged["api_timeout"] = cty.NumberIntVal(p.Spec.ApiTimeout)
 	merged["rest_session_path"] = cty.StringVal(p.Spec.RestSessionPath)
@@ -94,15 +92,10 @@ func populateConfig(p *ProviderConfig, up *UserPass) cty.Value {
 	merged["persist_session"] = cty.BoolVal(p.Spec.PersistSession)
 	merged["vim_session_path"] = cty.StringVal(p.Spec.VimSessionPath)
 	merged["vsphere_server"] = cty.StringVal(p.Spec.VsphereServer)
+	merged["user"] = cty.StringVal(p.Spec.User)
 
-	merged["user"] = cty.StringVal(up.User)
-	merged["password"] = cty.StringVal(up.Pass)
+	merged["password"] = cty.StringVal(password)
 	return cty.ObjectVal(merged)
-}
-
-type UserPass struct {
-	User string `json:"user"`
-	Pass string `json:"pass"`
 }
 
 func GetProviderInit() *plugin.ProviderInit {
@@ -115,51 +108,27 @@ func GetProviderInit() *plugin.ProviderInit {
 	}
 }
 
-func readCredentials(ctx context.Context, kube kubeclient.Client, mr resource.Managed) (*UserPass, error) {
-	pc := &ProviderConfig{}
-	t := resource.NewProviderConfigUsageTracker(kube, &ProviderConfigUsage{})
-	if err := t.Track(ctx, mr); err != nil {
-		return nil, err
-	}
-	if err := kube.Get(ctx, types.NamespacedName{Name: mr.GetProviderConfigReference().Name}, pc); err != nil {
-		return nil, err
-	}
-
+func readPassword(ctx context.Context, kube kubeclient.Client, pc *ProviderConfig) (string, error) {
 	if s := pc.Spec.Credentials.Source; s != xpv1.CredentialsSourceSecret {
-		return nil, errors.Errorf("unsupported credentials source %q", s)
+		return "", errors.Errorf("unsupported credentials source %q", s)
 	}
-
 	ref := pc.Spec.Credentials.SecretRef
 	if ref == nil {
-		return nil, errors.New("no credentials secret reference was provided")
+		return "", errors.New("no credentials secret reference was provided")
+	}
+	if ref.Key == "" {
+		return "", fmt.Errorf("secret reference 'Key' field must be specified for ProviderConfig %s", pc.Name)
 	}
 
 	s := &corev1.Secret{}
 	if err := kube.Get(ctx, types.NamespacedName{Name: ref.Name, Namespace: ref.Namespace}, s); err != nil {
-		return nil, err
+		return "", err
 	}
 
-	return userPassFromSecret(s)
-}
-
-func userPassFromSecret(s *corev1.Secret) (*UserPass, error) {
-	if s.Type != corev1.SecretTypeBasicAuth {
-		basicAuthUrl := "https://kubernetes.io/docs/concepts/configuration/secret/#basic-authentication-secret"
-		return nil, fmt.Errorf("expected key to be of type %s -- see %s", corev1.SecretTypeBasicAuth, basicAuthUrl)
+	password, ok := s.Data[ref.Key]
+	if !ok || len(password) == 0 {
+		return "", fmt.Errorf("Cannot read value from password key (%s) of secret at %s.%s", ref.Key, ref.Namespace, ref.Name)
 	}
 
-	// we can assume these fields exist because k8s api guarantees them based on the .Type
-	// but we need to check their length because k8s api only requires one of them to be non-zero
-	username := s.Data[corev1.BasicAuthUsernameKey]
-	if len(username) == 0 {
-		return nil, errors.New("username field of basic-auth provider credential secret is empty")
-	}
-	password := s.Data[corev1.BasicAuthPasswordKey]
-	if len(username) == 0 {
-		return nil, errors.New("password field of basic-auth provider credential secret is empty")
-	}
-	return &UserPass{
-		User: string(username),
-		Pass: string(password),
-	}, nil
+	return string(password), nil
 }
