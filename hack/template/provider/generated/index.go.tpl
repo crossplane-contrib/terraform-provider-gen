@@ -7,10 +7,14 @@ import (
 
 const ProviderReferenceName string = "{{ .Name }}"
 
-func Index(idxr *plugin.Indexer) {
+func Index(idxr *plugin.Indexer) error {
 	for _, impl := range ResourceImplementations {
-		idxr.Overlay(impl)
+		err := idxr.Overlay(impl)
+		if err != nil {
+			return err
+		}
 	}
+	return nil
 }
 
 func ProviderInit() *plugin.ProviderInit {

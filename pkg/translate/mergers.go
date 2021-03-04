@@ -285,15 +285,15 @@ func {{.FuncName}}(k *{{.ParentType}}, p *{{.ParentType}}, md *plugin.MergeDescr
 
 var mergeStructSliceTemplateStatus = `//mergeStructSliceTemplateStatus
 func {{.FuncName}}(ksp *[]{{.ParentType}}, psp *[]{{.ParentType}}, md *plugin.MergeDescription) bool {
-	ks := *ksp
-	ps := *psp
-	if len(ks) != len(ps) {
-		ks = ps
+	if len(*ksp) != len(*psp) {
+		*ksp = *psp
 		md.NeedsProviderUpdate = true
 		return true
 	}
+	ks := *ksp
+	ps := *psp
 	anyChildUpdated := false
-	for i, _ := range ps {
+	for i := range ps {
 		updated := false
 		k := &ks[i]
 		p := &ps[i]
@@ -307,15 +307,15 @@ func {{.FuncName}}(ksp *[]{{.ParentType}}, psp *[]{{.ParentType}}, md *plugin.Me
 
 var mergeStructSliceTemplateSpec = `//mergeStructSliceTemplateSpec
 func {{.FuncName}}(ksp *[]{{.ParentType}}, psp *[]{{.ParentType}}, md *plugin.MergeDescription) bool {
-	ks := *ksp
-	ps := *psp
-	if len(ks) != len(ps) {
-		ps = ks
+	if len(*ksp) != len(*psp) {
+		*psp = *ksp
 		md.NeedsProviderUpdate = true
 		return true
 	}
+	ks := *ksp
+	ps := *psp
 	anyChildUpdated := false
-	for i, _ := range ps {
+	for i := range ps {
 		updated := false
 		k := &ks[i]
 		p := &ps[i]

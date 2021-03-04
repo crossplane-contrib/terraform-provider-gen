@@ -257,12 +257,12 @@ func DecodeHostPortGroup_Ports(pp *[]Ports, vals map[string]cty.Value) {
 var containerCollectionTypeDecodeTemplate = `//containerCollectionTypeDecodeTemplate
 func {{.FuncName}}(pp *[]{{.ParentType}}, vals map[string]cty.Value) {
     if vals["{{.TerraformFieldName}}"].IsNull() {
-		pp = nil
+		*pp = []{{.ParentType}}{}
 		return
 	}
 	rvals := ctwhy.ValueAsList(vals["{{.TerraformFieldName}}"])
 	if len(rvals) == 0 {
-		pp = nil
+		*pp = []{{.ParentType}}{}
 		return
 	}
 	lval := make([]{{.ParentType}}, 0)
@@ -272,18 +272,18 @@ func {{.FuncName}}(pp *[]{{.ParentType}}, vals map[string]cty.Value) {
 {{.GenerateChildrenDecodeFuncCalls 2 "vi"}}
 		lval = append(lval, *vi)
 	}
-	pp = &lval
+	*pp = lval
 }`
 
 var containerCollectionSingletonTypeDecodeTemplate = `//containerCollectionSingletonTypeDecodeTemplate
 func {{.FuncName}}(p *{{.ParentType}}, vals map[string]cty.Value) {
 	if vals["{{.TerraformFieldName}}"].IsNull() {
-		p = nil
+		*p = {{.ParentType}}{}
 		return
 	}
 	rvals := {{.CollectionConversionFunc}}(vals["{{.TerraformFieldName}}"])
 	if len(rvals) == 0 {
-		p = nil
+		*p = {{.ParentType}}{}
 		return
 	}
 	// this template should be used when single dictionary/object values are nested in sets/lists

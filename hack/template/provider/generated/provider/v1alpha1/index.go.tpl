@@ -38,9 +38,6 @@ import (
 const (
 	Group                         = "vsphere.terraform-plugin.crossplane.io"
 	Version                       = "v1alpha1"
-	errProviderNotRetrieved       = "provider could not be retrieved"
-	errProviderSecretNotRetrieved = "secret referred in provider could not be retrieved"
-	errProviderSecretNil          = "cannot find Secret reference on Provider"
 	ProviderName                  = "vsphere"
 )
 

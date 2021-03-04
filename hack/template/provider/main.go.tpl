@@ -53,7 +53,10 @@ func main() {
 
 	providerInit := generated.ProviderInit()
 	idxr := plugin.NewIndexer()
-	generated.Index(idxr)
+	err := generated.Index(idxr)
+    if err != nil {
+		kingpin.FatalIfError(err, "plugin.Indexer failed (likely issue with a resource Implementation overlay)")
+    }
 	idx, err := idxr.BuildIndex()
 	kingpin.FatalIfError(err, "Failed to index provider plugin")
 
