@@ -2,18 +2,14 @@ module github.com/crossplane-contrib/terraform-provider-gen
 
 go 1.13
 
-replace github.com/crossplane-contrib/terraform-runtime => /Users/kasey/src/crossplane-contrib/terraform-provider-runtime
-
 require (
 	github.com/crossplane-contrib/terraform-runtime v0.0.0-20210317191104-9eb36dba841c
-	github.com/crossplane/crossplane-runtime v0.12.0
 	github.com/dave/jennifer v1.3.0
 	github.com/hashicorp/terraform v0.13.5
 	github.com/iancoleman/strcase v0.1.2
 	github.com/pkg/errors v0.9.1
 	github.com/zclconf/go-cty v1.7.0
 	gopkg.in/alecthomas/kingpin.v2 v2.2.6
-	k8s.io/apimachinery v0.18.8
 	sigs.k8s.io/yaml v1.2.0
 )
 
