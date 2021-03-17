@@ -9,6 +9,7 @@ import (
 )
 
 type Config struct {
+	ProviderVersion       string   `json:"provider-version"`
 	Name                  string   `json:"name"`
 	BasePath              string   `json:"base-path"`
 	RootPackage           string   `json:"root-package"`
