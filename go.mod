@@ -5,7 +5,7 @@ go 1.13
 replace github.com/crossplane-contrib/terraform-runtime => /Users/kasey/src/crossplane-contrib/terraform-provider-runtime
 
 require (
-	github.com/crossplane-contrib/terraform-runtime
+	github.com/crossplane-contrib/terraform-runtime v0.0.0-20210317191104-9eb36dba841c
 	github.com/crossplane/crossplane-runtime v0.12.0
 	github.com/dave/jennifer v1.3.0
 	github.com/hashicorp/terraform v0.13.5
