@@ -103,7 +103,7 @@ func (st *SchemaTranslator) writeResourceImplementationIndex(pis []PackageImport
 		return err
 	}
 
-	outPath := path.Join(dir, "implementations.go")
+	outPath := path.Join(dir, "index_resources.go")
 	fh, err := os.OpenFile(outPath, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0755)
 	defer fh.Close()
 	if err != nil {

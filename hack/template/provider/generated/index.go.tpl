@@ -1,22 +1,31 @@
 package generated
 
 import (
-	"{{ .RootPackage }}/generated/provider/{{ .ProviderConfigVersion }}"
 	"github.com/crossplane-contrib/terraform-runtime/pkg/plugin"
 )
 
-const ProviderReferenceName string = "{{ .Name }}"
+var resourceImplementations = make([]*plugin.Implementation, 0)
+var providerInit *plugin.ProviderInit
 
-func Index(idxr *plugin.Indexer) error {
-	for _, impl := range ResourceImplementations {
+// Index provides a plugin.Index for the generated provider
+// note that the value of resourceImplementations is populated
+// at runtime in implementations.go. This is to enable the separation of
+// the build into multiple stages.
+func Index() (*plugin.Index, error) {
+	idxr := plugin.NewIndexer()
+	for _, impl := range resourceImplementations {
 		err := idxr.Overlay(impl)
 		if err != nil {
-			return err
+			return nil, err
 		}
 	}
-	return nil
+	return idxr.BuildIndex()
 }
 
+// Index provides a plugin.ProviderInit for the generated provider.
+// Note that the value of providerInit is populated
+// at runtime in provider.go. This is to enable the separation of
+// the build into multiple stages.
 func ProviderInit() *plugin.ProviderInit {
-	return v1alpha1.GetProviderInit()
+	return providerInit
 }

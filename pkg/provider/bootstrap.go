@@ -11,16 +11,15 @@ import (
 )
 
 const (
-	PROVIDER_MAINGO_PATH   = "hack/template/provider/main.go.tpl"
+	PROVIDER_MAINGO_PATH = "hack/template/provider/cmd/provider/main.go.tpl"
 
-	PROVIDER_GENERATE_PATH = "hack/template/provider/generated/generate.go.tpl"
-	PROVIDER_INDEX_PATH    = "hack/template/provider/generated/index.go.tpl"
+	PROVIDER_INDEX_PATH           = "hack/template/provider/generated/index.go.tpl"
+	PROVIDERCONFIG_INIT_PATH      = "hack/template/provider/generated/index_provider.go.tpl"
+	RESOURCE_IMPLEMENTATIONS_PATH = "hack/template/provider/generated/index_resources.go.tpl"
 
-	PROVIDERCONFIG_DOC_PATH = "hack/template/provider/generated/provider/v1alpha1/doc.go.tpl"
+	PROVIDERCONFIG_DOC_PATH   = "hack/template/provider/generated/provider/v1alpha1/doc.go.tpl"
 	PROVIDERCONFIG_TYPES_PATH = "hack/template/provider/generated/provider/v1alpha1/types.go.tpl"
 	PROVIDERCONFIG_INDEX_PATH = "hack/template/provider/generated/provider/v1alpha1/index.go.tpl"
-
-	RESOURCE_IMPLEMENTATIONS_PATH = "hack/template/provider/generated/implementations.go.tpl"
 )
 
 type Bootstrapper struct {
@@ -31,9 +30,6 @@ type Bootstrapper struct {
 
 func (bs *Bootstrapper) Bootstrap() error {
 	if err := bs.WriteMainGo(); err != nil {
-		return err
-	}
-	if err := bs.WriteProviderGenerateGo(); err != nil {
 		return err
 	}
 	if err := bs.WriteIndexGo(); err != nil {
@@ -52,18 +48,18 @@ func (bs *Bootstrapper) Bootstrap() error {
 }
 
 func (bs *Bootstrapper) WriteMainGo() error {
-	path := path.Join(bs.cfg.BasePath, "main.go")
+	path := path.Join(bs.cfg.BasePath, "cmd", "provider", "main.go")
 	return bs.writeExecutedConfigTemplate(PROVIDER_MAINGO_PATH, path)
-}
-
-func (bs *Bootstrapper) WriteProviderGenerateGo() error {
-	path := path.Join(bs.cfg.BasePath, "generated", "generate.go")
-	return bs.writeExecutedConfigTemplate(PROVIDER_GENERATE_PATH, path)
 }
 
 func (bs *Bootstrapper) WriteIndexGo() error {
 	path := path.Join(bs.cfg.BasePath, "generated", "index.go")
 	return bs.writeExecutedConfigTemplate(PROVIDER_INDEX_PATH, path)
+}
+
+func (bs *Bootstrapper) WriteProviderInitGo() error {
+	path := path.Join(bs.cfg.BasePath, "generated", "index_provider.go")
+	return bs.writeExecutedConfigTemplate(PROVIDERCONFIG_INIT_PATH, path)
 }
 
 func (bs *Bootstrapper) WriteProviderDoc() error {

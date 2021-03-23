@@ -26,7 +26,6 @@ import (
 
 	"{{ .RootPackage }}/generated"
 	"github.com/crossplane-contrib/terraform-runtime/pkg/client"
-	"github.com/crossplane-contrib/terraform-runtime/pkg/plugin"
 	"github.com/crossplane/crossplane-runtime/pkg/logging"
 
 	"github.com/crossplane-contrib/terraform-runtime/pkg/controller"
@@ -52,13 +51,10 @@ func main() {
 	}
 
 	providerInit := generated.ProviderInit()
-	idxr := plugin.NewIndexer()
-	err := generated.Index(idxr)
-    if err != nil {
-		kingpin.FatalIfError(err, "plugin.Indexer failed (likely issue with a resource Implementation overlay)")
-    }
-	idx, err := idxr.BuildIndex()
-	kingpin.FatalIfError(err, "Failed to index provider plugin")
+	idx, err := generated.Index()
+	if err != nil {
+		kingpin.FatalIfError(err, "Failed to build index of generated code (generated.Index())")
+	}
 
 	opts := ctrl.Options{SyncPeriod: syncPeriod}
 	ropts := client.NewRuntimeOptions().
