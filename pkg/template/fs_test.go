@@ -6,7 +6,7 @@ import (
 )
 
 func TestTemplateGetter(t *testing.T) {
-	g := NewTemplateGetter("../..")
+	g := NewFSTemplateGetter("../..")
 	f, err := g.Get("hack/template/pkg/template/test-template-getter.txt")
 	if err != nil {
 		t.Error(err)

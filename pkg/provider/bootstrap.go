@@ -11,15 +11,15 @@ import (
 )
 
 const (
-	PROVIDER_MAINGO_PATH = "hack/template/provider/cmd/provider/main.go.tpl"
+	PROVIDER_MAINGO_PATH = "provider/cmd/provider/main.go.tpl"
 
-	PROVIDER_INDEX_PATH           = "hack/template/provider/generated/index.go.tpl"
-	PROVIDERCONFIG_INIT_PATH      = "hack/template/provider/generated/index_provider.go.tpl"
-	RESOURCE_IMPLEMENTATIONS_PATH = "hack/template/provider/generated/index_resources.go.tpl"
+	PROVIDER_INDEX_PATH           = "provider/generated/index.go.tpl"
+	PROVIDERCONFIG_INIT_PATH      = "provider/generated/index_provider.go.tpl"
+	RESOURCE_IMPLEMENTATIONS_PATH = "provider/generated/index_resources.go.tpl"
 
-	PROVIDERCONFIG_DOC_PATH   = "hack/template/provider/generated/provider/v1alpha1/doc.go.tpl"
-	PROVIDERCONFIG_TYPES_PATH = "hack/template/provider/generated/provider/v1alpha1/types.go.tpl"
-	PROVIDERCONFIG_INDEX_PATH = "hack/template/provider/generated/provider/v1alpha1/index.go.tpl"
+	PROVIDERCONFIG_DOC_PATH   = "provider/generated/provider/v1alpha1/doc.go.tpl"
+	PROVIDERCONFIG_TYPES_PATH = "provider/generated/provider/v1alpha1/types.go.tpl"
+	PROVIDERCONFIG_INDEX_PATH = "provider/generated/provider/v1alpha1/index.go.tpl"
 )
 
 type Bootstrapper struct {

@@ -298,7 +298,7 @@ func GenerateEncoders(mr *generator.ManagedResource, tg tpl.TemplateGetter) (str
 	atProvider := mr.Observation
 	typeName := mr.Namer().TypeName()
 
-	ttpl, err := tg.Get("hack/template/pkg/generator/encode.go.tmpl")
+	ttpl, err := tg.Get("pkg/generator/encode.go.tmpl")
 	if err != nil {
 		return "", err
 	}

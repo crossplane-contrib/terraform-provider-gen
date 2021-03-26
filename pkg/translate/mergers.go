@@ -371,7 +371,7 @@ func GenerateMergers(mr *generator.ManagedResource, tg tpl.TemplateGetter) (stri
 	atProvider := mr.Observation
 	typeName := mr.Namer().TypeName()
 
-	ttpl, err := tg.Get("hack/template/pkg/generator/compare.go.tmpl")
+	ttpl, err := tg.Get("pkg/generator/compare.go.tmpl")
 	if err != nil {
 		return "", err
 	}

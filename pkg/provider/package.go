@@ -84,7 +84,7 @@ func (pt *PackageTranslator) WriteCompareFile(mr *generator.ManagedResource) err
 }
 
 func (pt *PackageTranslator) WriteConfigureFile() error {
-		return pt.renderWithNamer("configure.go")
+	return pt.renderWithNamer("configure.go")
 }
 
 func (pt *PackageTranslator) WriteDocFile() error {
@@ -153,7 +153,7 @@ func (pt *PackageTranslator) overlaid(filename string) (bool, error) {
 }
 
 func (pt *PackageTranslator) templatePath(filename string) string {
-	return fmt.Sprintf("hack/template/pkg/generator/%s.tmpl", filename)
+	return fmt.Sprintf("pkg/generator/%s.tmpl", filename)
 }
 
 func (pt *PackageTranslator) outputPath(filename string) string {

@@ -54,7 +54,7 @@ func run() error {
 		if err != nil {
 			return err
 		}
-		tg := template.NewTemplateGetter(*repoRoot)
+		tg := template.NewCompiledTemplateGetter()
 		p, err := client.NewGRPCProvider(cfg.Name, *pluginPath)
 		if err != nil {
 			return err
@@ -87,7 +87,7 @@ func run() error {
 			}
 		}
 
-		tg := template.NewTemplateGetter(*repoRoot)
+		tg := template.NewCompiledTemplateGetter()
 		p, err := client.NewGRPCProvider(cfg.Name, *pluginPath)
 		if err != nil {
 			return err

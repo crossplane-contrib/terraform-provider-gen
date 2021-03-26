@@ -1,0 +1,5 @@
+package generated
+
+func Index() string {
+	return "package generated\n\nimport (\n\t\"github.com/crossplane-contrib/terraform-runtime/pkg/plugin\"\n)\n\nvar resourceImplementations = make([]*plugin.Implementation, 0)\nvar providerInit *plugin.ProviderInit\n\n// Index provides a plugin.Index for the generated provider\n// note that the value of resourceImplementations is populated\n// at runtime in implementations.go. This is to enable the separation of\n// the build into multiple stages.\nfunc Index() (*plugin.Index, error) {\n\tidxr := plugin.NewIndexer()\n\tfor _, impl := range resourceImplementations {\n\t\terr := idxr.Overlay(impl)\n\t\tif err != nil {\n\t\t\treturn nil, err\n\t\t}\n\t}\n\treturn idxr.BuildIndex()\n}\n\n// Index provides a plugin.ProviderInit for the generated provider.\n// Note that the value of providerInit is populated\n// at runtime in provider.go. This is to enable the separation of\n// the build into multiple stages.\nfunc ProviderInit() *plugin.ProviderInit {\n\treturn providerInit\n}\n"
+}

@@ -332,7 +332,7 @@ func GenerateDecoders(mr *generator.ManagedResource, tg tpl.TemplateGetter) (str
 	atProvider := mr.Observation
 	typeName := mr.Namer().TypeName()
 
-	ttpl, err := tg.Get("hack/template/pkg/generator/decode.go.tmpl")
+	ttpl, err := tg.Get("pkg/generator/decode.go.tmpl")
 	if err != nil {
 		return "", err
 	}
