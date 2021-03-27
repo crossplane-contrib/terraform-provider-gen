@@ -28,10 +28,9 @@ var (
 	overlayBasePath = generateCmd.Flag("overlay-dir", "Path to search for files to overlay instead of generated code. Nesting mirrors output tree.").String()
 	cfgPath         = generateCmd.Flag("cfg-path", "path to schema generation config yaml").String()
 
-	bootStrapCmd = generateCmd.Command("bootstrap", "bootstrap a new provider")
-
-	generateSchemaCmd = generateCmd.Command("schema", "Use Provider.GetSchema() to generate crossplane types.")
-	repoRoot          = generateSchemaCmd.Flag("repo-root", "path to the root of the terraform-provider-gen so the binary can find templates (defaults to PWD)").String()
+	bootStrapCmd       = generateCmd.Command("bootstrap", "bootstrap a new provider")
+	generateTypesCmd   = generateCmd.Command("types", "Use Provider.GetSchema() to generate crossplane types.")
+	generateRuntimeCmd = generateCmd.Command("runtime", "Generate terraform-runtime methods for generated crossplane types.")
 
 	analyzeCmd       = gen.Command("analyze", "perform analysis on a provider's schemas")
 	nestingCmd       = analyzeCmd.Command("nesting", "report on the different nesting paths and modes observed in a provider")
@@ -48,7 +47,8 @@ func main() {
 }
 
 func run() error {
-	switch kingpin.MustParse(gen.Parse(os.Args[1:])) {
+	cmd := kingpin.MustParse(gen.Parse(os.Args[1:]))
+	switch cmd {
 	case bootStrapCmd.FullCommand():
 		cfg, err := provider.ConfigFromFile(*cfgPath)
 		if err != nil {
@@ -75,7 +75,7 @@ func run() error {
 		if err != nil {
 			return err
 		}
-	case generateSchemaCmd.FullCommand():
+	case generateTypesCmd.FullCommand(), generateRuntimeCmd.FullCommand():
 		cfg, err := provider.ConfigFromFile(*cfgPath)
 		if err != nil {
 			return err
@@ -93,7 +93,14 @@ func run() error {
 			return err
 		}
 		st := provider.NewSchemaTranslator(cfg, *outputDir, *overlayBasePath, p.GetSchema(), tg)
-		return st.WriteAllGeneratedResourceFiles()
+
+		switch cmd {
+		case generateTypesCmd.FullCommand():
+			return st.WriteGeneratedTypes()
+		case generateRuntimeCmd.FullCommand():
+			return st.WriteGeneratedRuntime()
+		}
+		//return st.WriteAllGeneratedResourceFiles()
 	case nestingCmd.FullCommand():
 		p, err := client.NewGRPCProvider(*providerName, *pluginPath)
 		if err != nil {
