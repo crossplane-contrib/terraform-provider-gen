@@ -68,6 +68,7 @@ func (fb *FieldBuilder) StructField(typeName string, fields []generator.Field) *
 		TypeName: typeName,
 	}
 	fb.f.Fields = fields
+	sort.Stable(generator.NamedFields(fb.f.Fields))
 	return fb
 }
 
@@ -216,8 +217,8 @@ func SpecOrStatusAttributeFields(attributes map[string]*configschema.Attribute, 
 			atProvider = append(atProvider, f)
 		}
 	}
-	sort.Sort(generator.NamedFields(forProvider))
-	sort.Sort(generator.NamedFields(atProvider))
+	sort.Stable(generator.NamedFields(forProvider))
+	sort.Stable(generator.NamedFields(atProvider))
 	return forProvider, atProvider
 }
 
@@ -255,10 +256,11 @@ func NestedBlockFields(blocks map[string]*configschema.NestedBlock, packagePath,
 		for n, attr := range block.Attributes {
 			f.Fields = append(f.Fields, TypeToField(n, attr.Type, sp))
 		}
+		sort.Stable(generator.NamedFields(f.Fields))
 		f.Fields = append(f.Fields, NestedBlockFields(block.BlockTypes, packagePath, sp)...)
 		fields = append(fields, f)
 	}
-	sort.Sort(generator.NamedFields(fields))
+	sort.Stable(generator.NamedFields(fields))
 	return fields
 }
 

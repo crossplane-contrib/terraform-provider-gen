@@ -7,6 +7,7 @@ import (
 	"io"
 	"os"
 	"path"
+	"sort"
 
 	"github.com/crossplane-contrib/terraform-provider-gen/pkg/template"
 	"github.com/crossplane-contrib/terraform-provider-gen/pkg/translate"
@@ -112,6 +113,10 @@ func (st *SchemaTranslator) writeResourceImplementationIndex(pis []PackageImport
 	if err != nil {
 		return err
 	}
+	// sort ascending by package name for stable output
+	sort.SliceStable(pis, func(i, j int) bool {
+		return pis[i].Name < pis[j].Name
+	})
 	buf := new(bytes.Buffer)
 	values := struct {
 		Config
