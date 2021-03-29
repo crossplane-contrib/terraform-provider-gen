@@ -3,6 +3,7 @@ package translate
 import (
 	"bytes"
 	"fmt"
+	"sort"
 	"strings"
 	"text/template"
 
@@ -121,6 +122,7 @@ func renderContainerTypeDecoder(efr *decodeFnRenderer, template string) string {
 	decoderTemplates[template].Execute(b, efr)
 
 	rendered := []string{b.String()}
+	sort.Stable(generator.NamedFields(efr.Children))
 	for _, child := range efr.Children {
 		receivedType := efr.ParentType
 		if child.Type == generator.FieldTypeStruct {
@@ -178,6 +180,7 @@ func (efr *decodeFnRenderer) PrimitiveFieldType() string {
 // this could be fixed by rewriting the entrypoint
 func generateChildrenDecodeFuncCalls(indent, funcName string, attr string, children []generator.Field, attrRefs bool) string {
 	lines := make([]string, 0)
+	sort.Stable(generator.NamedFields(children))
 	for _, child := range children {
 		if child.Type == generator.FieldTypeAttribute {
 			l := fmt.Sprintf("%s%s_%s(%s, valMap)", indent, funcName, child.Name, attr)
