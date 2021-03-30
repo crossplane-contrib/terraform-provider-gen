@@ -100,7 +100,6 @@ func run() error {
 		case generateRuntimeCmd.FullCommand():
 			return st.WriteGeneratedRuntime()
 		}
-		//return st.WriteAllGeneratedResourceFiles()
 	case nestingCmd.FullCommand():
 		p, err := client.NewGRPCProvider(*providerName, *pluginPath)
 		if err != nil {
