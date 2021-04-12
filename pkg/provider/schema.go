@@ -7,6 +7,7 @@ import (
 	"io"
 	"os"
 	"path"
+	"sort"
 
 	"github.com/crossplane-contrib/terraform-provider-gen/pkg/template"
 	"github.com/crossplane-contrib/terraform-provider-gen/pkg/translate"
@@ -28,8 +29,7 @@ type SchemaTranslator struct {
 	overlayBasePath string
 }
 
-func (st *SchemaTranslator) WriteAllGeneratedResourceFiles() error {
-	pis := make([]PackageImport, 0)
+func (st *SchemaTranslator) WriteGeneratedTypes() error {
 	for name, s := range st.schema.ResourceTypes {
 		if st.cfg.IsExcluded(name) {
 			fmt.Printf("Skipping resource %s", name)
@@ -50,6 +50,33 @@ func (st *SchemaTranslator) WriteAllGeneratedResourceFiles() error {
 		if err != nil {
 			return err
 		}
+
+		err = pt.WriteDocFile()
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (st *SchemaTranslator) WriteGeneratedRuntime() error {
+	pis := make([]PackageImport, 0)
+	for name, s := range st.schema.ResourceTypes {
+		if st.cfg.IsExcluded(name) {
+			fmt.Printf("Skipping resource %s", name)
+			continue
+		}
+		namer := NewTerraformResourceNamer(st.cfg.Name, name, st.cfg.BaseCRDVersion)
+		pt := NewPackageTranslator(s, namer, st.basePath, st.overlayBasePath, st.cfg, st.tg)
+		err := pt.EnsureOutputLocation()
+		if err != nil {
+			return err
+		}
+		mr := translate.SchemaToManagedResource(pt.namer.ManagedResourceName(), pt.cfg.PackagePath, pt.resourceSchema)
+		mr, err = optimize.Deduplicate(mr)
+		if err != nil {
+			return err
+		}
 		err = pt.WriteEncoderFile(mr)
 		if err != nil {
 			return err
@@ -64,10 +91,6 @@ func (st *SchemaTranslator) WriteAllGeneratedResourceFiles() error {
 		}
 
 		err = pt.WriteConfigureFile()
-		if err != nil {
-			return err
-		}
-		err = pt.WriteDocFile()
 		if err != nil {
 			return err
 		}
@@ -90,6 +113,10 @@ func (st *SchemaTranslator) writeResourceImplementationIndex(pis []PackageImport
 	if err != nil {
 		return err
 	}
+	// sort ascending by package name for stable output
+	sort.SliceStable(pis, func(i, j int) bool {
+		return pis[i].Name < pis[j].Name
+	})
 	buf := new(bytes.Buffer)
 	values := struct {
 		Config
@@ -103,7 +130,7 @@ func (st *SchemaTranslator) writeResourceImplementationIndex(pis []PackageImport
 		return err
 	}
 
-	outPath := path.Join(dir, "implementations.go")
+	outPath := path.Join(dir, "index_resources.go")
 	fh, err := os.OpenFile(outPath, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0755)
 	defer fh.Close()
 	if err != nil {

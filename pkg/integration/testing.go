@@ -67,7 +67,7 @@ func (itc *IntegrationTestConfig) TemplateGetter() (template.TemplateGetter, err
 	if err != nil {
 		return nil, err
 	}
-	return template.NewTemplateGetter(p), nil
+	return template.NewFSTemplateGetter(p), nil
 }
 
 type TestConfigOption func(*IntegrationTestConfig)

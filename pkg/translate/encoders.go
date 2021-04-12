@@ -3,6 +3,7 @@ package translate
 import (
 	"bytes"
 	"fmt"
+	"sort"
 	"strings"
 	"text/template"
 
@@ -122,6 +123,7 @@ func renderContainerType(efr *encodeFnRenderer, template string) string {
 	encoderTemplates[template].Execute(b, efr)
 
 	rendered := []string{b.String()}
+	sort.Stable(generator.NamedFields(efr.Children))
 	for _, child := range efr.Children {
 		receivedType := efr.ParentType
 		if child.Type == generator.FieldTypeStruct {
@@ -177,6 +179,7 @@ func (efr *encodeFnRenderer) GenerateChildrenFuncCalls(indentLevels int, attr st
 
 func generateChildrenFuncCalls(indent, funcName string, attr string, children []generator.Field) string {
 	lines := make([]string, 0)
+	sort.Stable(generator.NamedFields(children))
 	for _, child := range children {
 		if child.Type == generator.FieldTypeAttribute {
 			l := fmt.Sprintf("%s%s_%s(%s, ctyVal)", indent, funcName, child.Name, attr)
@@ -298,7 +301,7 @@ func GenerateEncoders(mr *generator.ManagedResource, tg tpl.TemplateGetter) (str
 	atProvider := mr.Observation
 	typeName := mr.Namer().TypeName()
 
-	ttpl, err := tg.Get("hack/template/pkg/generator/encode.go.tmpl")
+	ttpl, err := tg.Get("pkg/generator/encode.go.tmpl")
 	if err != nil {
 		return "", err
 	}

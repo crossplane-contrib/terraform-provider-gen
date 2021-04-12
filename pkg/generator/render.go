@@ -275,7 +275,7 @@ func (tdr *managedResourceTypeDefRenderer) Render() (string, error) {
 		typeDefs = append(typeDefs, frag)
 	}
 
-	tpl, err := tdr.tg.Get("hack/template/pkg/generator/types.go.tmpl")
+	tpl, err := tdr.tg.Get("pkg/generator/types.go.tmpl")
 	if err != nil {
 		return "", err
 	}

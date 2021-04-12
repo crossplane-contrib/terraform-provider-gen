@@ -3,6 +3,7 @@ package translate
 import (
 	"bytes"
 	"fmt"
+	"sort"
 	"strings"
 	"text/template"
 
@@ -118,6 +119,7 @@ func renderContainerTypeMerger(efr *mergeFnRenderer, template string, isSpec boo
 	}
 
 	rendered := []string{b.String()}
+	sort.Stable(generator.NamedFields(efr.Children))
 	for _, child := range efr.Children {
 		receivedType := efr.ParentType
 		if child.Type == generator.FieldTypeStruct {
@@ -164,6 +166,7 @@ func (efr mergeFnRenderer) GenerateChildrenMergeFuncCalls(indentLevels int, isSp
 // this could be fixed by rewriting the entrypoint
 func generateChildrenMergeFuncCalls(indent, funcName string, children []generator.Field, isSpec bool, leftAttr string, rightAttr string, attrRefs bool) string {
 	lines := make([]string, 0)
+	sort.Stable(generator.NamedFields(children))
 	for _, child := range children {
 		if child.Type == generator.FieldTypeAttribute {
 			l := fmt.Sprintf("%supdated = %s_%s(%s, %s, md)", indent, funcName, child.Name, leftAttr, rightAttr)
@@ -371,7 +374,7 @@ func GenerateMergers(mr *generator.ManagedResource, tg tpl.TemplateGetter) (stri
 	atProvider := mr.Observation
 	typeName := mr.Namer().TypeName()
 
-	ttpl, err := tg.Get("hack/template/pkg/generator/compare.go.tmpl")
+	ttpl, err := tg.Get("pkg/generator/compare.go.tmpl")
 	if err != nil {
 		return "", err
 	}

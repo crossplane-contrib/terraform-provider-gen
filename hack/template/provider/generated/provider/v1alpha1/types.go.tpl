@@ -29,21 +29,21 @@ import (
 // A ProviderConfigSpec defines the desired state of a ProviderConfig.
 type ProviderConfigSpec struct {
 	xpv1.ProviderConfigSpec `json:",inline"`
-	ApiTimeout int64 `json:"api_timeout"`
-	RestSessionPath string `json:"rest_session_path"`
-	VcenterServer string `json:"vcenter_server"`
-	VimKeepAlive int64 `json:"vim_keep_alive"`
-	AllowUnverifiedSsl bool `json:"allow_unverified_ssl"`
-	ClientDebug bool `json:"client_debug"`
-	ClientDebugPath string `json:"client_debug_path"`
-	ClientDebugPathRun string `json:"client_debug_path_run"`
+	ApiTimeout int64 `json:"api_timeout,omitempty"`
+	RestSessionPath string `json:"rest_session_path,omitempty"`
+	VcenterServer string `json:"vcenter_server,omitempty"`
+	VimKeepAlive int64 `json:"vim_keep_alive,omitempty"`
+	AllowUnverifiedSsl bool `json:"allow_unverified_ssl,omitempty"`
+	ClientDebug bool `json:"client_debug,omitempty"`
+	ClientDebugPath string `json:"client_debug_path,omitempty"`
+	ClientDebugPathRun string `json:"client_debug_path_run,omitempty"`
 	// +kubebuilder:validation:Required
 	Password string `json:"password"`
-	PersistSession bool `json:"persist_session"`
+	PersistSession bool `json:"persist_session,omitempty"`
 	// +kubebuilder:validation:Required
 	User string `json:"user"`
-	VimSessionPath string `json:"vim_session_path"`
-	VsphereServer string `json:"vsphere_server"`
+	VimSessionPath string `json:"vim_session_path,omitempty"`
+	VsphereServer string `json:"vsphere_server,omitempty"`
 }
 
 // A ProviderConfigStatus represents the status of a ProviderConfig.
